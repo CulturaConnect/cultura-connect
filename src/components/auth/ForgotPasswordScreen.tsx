@@ -15,9 +15,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { AuthScreen } from '@/pages/Index';
 import Logo from './Logo';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/auth';
 
 const emailSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -41,19 +42,16 @@ type EmailData = z.infer<typeof emailSchema>;
 type CodeData = z.infer<typeof codeSchema>;
 type PasswordData = z.infer<typeof passwordSchema>;
 
-interface ForgotPasswordScreenProps {
-  onScreenChange: (screen: AuthScreen) => void;
-}
-
-export default function ForgotPasswordScreen({
-  onScreenChange,
-}: ForgotPasswordScreenProps) {
+export default function ForgotPasswordScreen() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { forgotPasswordSend } = useAuth();
+
+  const navigate = useNavigate();
 
   const emailForm = useForm<EmailData>({
     resolver: zodResolver(emailSchema),
@@ -74,7 +72,7 @@ export default function ForgotPasswordScreen({
 
   const sendEmail = async (data: EmailData) => {
     setLoading(true);
-    await new Promise((res) => setTimeout(res, 1500));
+    await forgotPasswordSend(data.email);
     setEmail(data.email);
     setStep(2);
     setLoading(false);
@@ -109,7 +107,7 @@ export default function ForgotPasswordScreen({
           <p className="text-gray-600 mb-6">
             Agora você pode entrar com sua nova senha
           </p>
-          <Button onClick={() => onScreenChange('login')} className="w-full">
+          <Button onClick={() => navigate('/auth/login')} className="w-full">
             Entrar
           </Button>
         </div>
@@ -258,7 +256,7 @@ export default function ForgotPasswordScreen({
   };
 
   return (
-    <div className="animate-slide-up max-w-md mx-auto">
+    <div className="animate-slide-up max-w-2xl px-6 mx-auto">
       <div className="flex items-center mb-6 justify-center">
         <Logo />
       </div>

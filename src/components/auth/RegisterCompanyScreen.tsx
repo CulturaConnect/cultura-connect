@@ -3,7 +3,6 @@
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,7 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import Logo from './Logo';
-import { AuthScreen } from '@/pages/Index';
+import { useNavigate } from 'react-router-dom';
 
 const step1Schema = z
   .object({
@@ -43,17 +42,12 @@ const step2Schema = z.object({
 type Step1Data = z.infer<typeof step1Schema>;
 type Step2Data = z.infer<typeof step2Schema>;
 
-interface RegisterCompanyScreenProps {
-  onScreenChange: (screen: AuthScreen, email?: string) => void;
-}
-
-export default function RegisterCompanyScreen({
-  onScreenChange,
-}: RegisterCompanyScreenProps) {
+export default function RegisterCompanyScreen() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const navigate = useNavigate();
 
   const formStep1 = useForm<Step1Data>({
     resolver: zodResolver(step1Schema),
@@ -86,12 +80,12 @@ export default function RegisterCompanyScreen({
   const handleSubmitStep2 = async (data: Step2Data) => {
     setLoading(true);
     await new Promise((res) => setTimeout(res, 1000));
-    onScreenChange('success', formStep1.getValues().email);
+    setLoading(false);
   };
 
   return (
-    <div className="animate-slide-up flex flex-col items-center w-full max-w-md mx-auto">
-      <div className="w-full p-4 flex flex-col items-center">
+    <div className="animate-slide-up flex flex-col items-center w-full max-w-2xl mx-auto">
+      <div className="w-full flex flex-col items-center">
         <div className="mb-6">
           <Logo />
         </div>
@@ -216,7 +210,7 @@ export default function RegisterCompanyScreen({
               <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
-                  onClick={() => onScreenChange('register-type')}
+                  onClick={() => navigate('/auth/register-type')}
                   className="flex-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   Voltar

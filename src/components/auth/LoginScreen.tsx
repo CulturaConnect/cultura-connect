@@ -4,27 +4,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
 import Logo from './Logo';
-import { AuthScreen } from '@/pages/Index';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/auth';
 
-interface LoginScreenProps {
-  onScreenChange: (screen: AuthScreen, email?: string) => void;
-}
-
-const LoginScreen = ({ onScreenChange }: LoginScreenProps) => {
+const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { Login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await Login({ email, senha: password });
 
     setLoading(false);
-    onScreenChange('success', email);
   };
 
   return (
@@ -73,7 +70,7 @@ const LoginScreen = ({ onScreenChange }: LoginScreenProps) => {
           <div className="text-left">
             <button
               type="button"
-              onClick={() => onScreenChange('forgot-password')}
+              onClick={() => navigate('/auth/recover')}
               className="text-sm text-primary hover:text-primary/80 font-medium"
             >
               Esqueci minha senha
@@ -93,7 +90,7 @@ const LoginScreen = ({ onScreenChange }: LoginScreenProps) => {
           <p className="text-gray-600">
             Não tem uma conta?{' '}
             <button
-              onClick={() => onScreenChange('register-type')}
+              onClick={() => navigate('/auth/register-type')}
               className="text-primary hover:text-primary/80 font-medium"
             >
               Cadastre-se agora!

@@ -16,7 +16,8 @@ import { Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
 import { useState } from 'react';
 import Logo from './Logo';
-import { AuthScreen } from '@/pages/Index';
+import { useNavigate } from 'react-router-dom';
+import { registerPerson } from '@/services/auth';
 
 const schema = z
   .object({
@@ -34,16 +35,11 @@ const schema = z
 
 type FormData = z.infer<typeof schema>;
 
-interface RegisterPersonScreenProps {
-  onScreenChange: (screen: AuthScreen, email?: string) => void;
-}
-
-export default function RegisterPersonScreen({
-  onScreenChange,
-}: RegisterPersonScreenProps) {
+export default function RegisterPersonScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigate = useNavigate();
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -59,14 +55,22 @@ export default function RegisterPersonScreen({
 
   const onSubmit = async (values: FormData) => {
     setLoading(true);
-    await new Promise((res) => setTimeout(res, 1500));
+
+    const { password, confirmPassword, ...rest } = values;
+
+    const formattedValues = {
+      ...rest,
+      senha: password,
+    };
+
+    await registerPerson(formattedValues);
     setLoading(false);
-    onScreenChange('success', values.email);
+    navigate('/auth/success');
   };
 
   return (
-    <div className="animate-slide-up flex flex-col items-center w-full max-w-md mx-auto">
-      <div className="p-6 w-full">
+    <div className="animate-slide-up flex flex-col items-center w-full max-w-2xl mx-auto">
+      <div className="w-full">
         <div className="flex items-center mb-6 w-full justify-center">
           <Logo />
         </div>
@@ -202,7 +206,7 @@ export default function RegisterPersonScreen({
             <div className="flex gap-3 pt-4">
               <Button
                 type="button"
-                onClick={() => onScreenChange('register-type')}
+                onClick={() => navigate('/auth/register-type')}
                 className="flex-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Voltar

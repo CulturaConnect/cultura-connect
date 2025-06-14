@@ -1,14 +1,11 @@
-import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Building, User } from 'lucide-react';
 import Logo from './Logo';
-import { AuthScreen } from '@/pages/Index';
+import { useNavigate } from 'react-router-dom';
 
-interface RegisterTypeScreenProps {
-  onScreenChange: (screen: AuthScreen) => void;
-}
+const RegisterTypeScreen = () => {
+  const navigate = useNavigate();
 
-const RegisterTypeScreen = ({ onScreenChange }: RegisterTypeScreenProps) => {
   return (
     <div className="animate-slide-up flex flex-col items-center w-full max-w-5xl justify-between h-screen">
       <div className="w-full flex items-center justify-center flex-col flex-1">
@@ -27,7 +24,7 @@ const RegisterTypeScreen = ({ onScreenChange }: RegisterTypeScreenProps) => {
           <div className="space-y-4">
             <Button
               className="w-full"
-              onClick={() => onScreenChange('register-company')}
+              onClick={() => navigate('/auth/register/company')}
             >
               <Building size={20} />
               Empresa
@@ -40,7 +37,7 @@ const RegisterTypeScreen = ({ onScreenChange }: RegisterTypeScreenProps) => {
             </div>
 
             <Button
-              onClick={() => onScreenChange('register-person')}
+              onClick={() => navigate('/auth/register/person')}
               className="w-full"
               variant="secondary"
             >
@@ -53,7 +50,7 @@ const RegisterTypeScreen = ({ onScreenChange }: RegisterTypeScreenProps) => {
             <p className="text-gray-600 text-sm">
               Já possui uma conta?{' '}
               <button
-                onClick={() => onScreenChange('login')}
+                onClick={() => navigate('/auth/login')}
                 className="text-teal-600 hover:text-teal-700 font-medium"
               >
                 Entre aqui!
@@ -64,7 +61,7 @@ const RegisterTypeScreen = ({ onScreenChange }: RegisterTypeScreenProps) => {
       </div>
       <div className="mb-6 w-full">
         <Button
-          onClick={() => onScreenChange('login')}
+          onClick={() => navigate('/auth/login')}
           className="w-full bg-[#3b444c] hover:bg-gray-800 text-white font-medium"
         >
           Não sabe qual escolher?

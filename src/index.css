@@ -75,6 +75,45 @@
   }
 }
 
+.grid-areas-canvas {
+  display: grid;
+  grid-template-areas:
+    'missao visao'
+    'mercado visao'
+    'publico proposta'
+    'receita proposta'
+    'retencao retencao';
+  grid-template-columns: 1fr 1fr;
+
+  .area-missao {
+    grid-area: missao;
+  }
+
+  .area-visao {
+    grid-area: visao;
+  }
+
+  .area-mercado {
+    grid-area: mercado;
+  }
+
+  .area-publico {
+    grid-area: publico;
+  }
+
+  .area-proposta {
+    grid-area: proposta;
+  }
+
+  .area-receita {
+    grid-area: receita;
+  }
+
+  .area-retencao {
+    grid-area: retencao;
+  }
+}
+
 @layer utilities {
   .gradient-bg {
     background: linear-gradient(
