@@ -14,6 +14,7 @@ import SuccessScreen from './components/auth/SuccessScreen';
 import { AuthProvider } from './contexts/auth';
 import NewProject from './pages/new-project';
 import ProfileScreen from './pages/profile';
+import ProjectDetails from './pages/project-details';
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/project/new" element={<NewProject />} />
+            <Route path="/project/:projectId" element={<ProjectDetails />} />
 
             <Route path="/me" element={<ProfileScreen />} />
 

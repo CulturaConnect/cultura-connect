@@ -41,3 +41,8 @@ export async function getProjects() {
   const response = await api.get('/projects');
   return response.data;
 }
+
+export async function getProjectById(projectId: string) {
+  const response = await api.get(`/projects/${projectId}`);
+  return response.data;
+}

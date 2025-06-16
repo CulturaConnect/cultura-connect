@@ -1,22 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { ArrowLeft, Edit2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BottomNavigation } from '@/components/layout/bottom-navigation';
 import { useAuth } from '@/contexts/auth';
+import { useUpdateProfile } from '@/api/users/users.queries';
 
 export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { user } = useAuth();
-
-  console.log('User data:', user);
 
   const [formData, setFormData] = useState({
     empresa: user?.nome || '',
@@ -27,17 +27,55 @@ export default function ProfileScreen() {
     mei: user?.tipo === 'company' ? user.isMei : null,
     inscricaoEstadual: user?.inscricaoEstadual || null,
     inscricaoMunicipal: user?.inscricaoMunicipal || null,
+    imagem: null,
     email: user?.email || '',
     senhaAtual: '',
     novaSenha: '',
     confirmarSenha: '',
   });
 
+  const { mutateAsync } = useUpdateProfile();
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormData((prev) => ({
+        ...prev,
+        imagem: file,
+      }));
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    const { nome, telefone, senhaAtual, novaSenha, confirmarSenha, imagem } =
+      formData;
+
+    const data = new FormData();
+
+    if (user?.tipo === 'company') {
+      data.append('telefone', telefone || '');
+      data.append('senhaAtual', senhaAtual || '');
+      data.append('novaSenha', novaSenha || '');
+      data.append('imagem', imagem || '');
+    } else {
+      data.append('nome', nome);
+      data.append('telefone', telefone || '');
+      data.append('senhaAtual', senhaAtual || '');
+      data.append('novaSenha', novaSenha || '');
+      data.append('imagem', imagem || '');
+    }
+
+    await mutateAsync(data);
     setIsEditing(false);
   };
 
@@ -55,6 +93,7 @@ export default function ProfileScreen() {
         telefone: user.telefone || '',
         mei: user.tipo === 'company' ? user.isMei : null,
         inscricaoEstadual: user.inscricaoEstadual || null,
+        imagem: null,
         inscricaoMunicipal: user.inscricaoMunicipal || null,
         email: user.email || '',
         senhaAtual: '',
@@ -94,14 +133,37 @@ export default function ProfileScreen() {
         </div>
 
         <div className="max-w-2xl w-full mx-auto bg-white">
-          <div className="flex justify-center py-6">
+          <div className="flex flex-col items-center py-6 gap-2">
             <div className="relative">
-              <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center text-2xl font-bold text-gray-700">
-                CON
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center text-2xl font-bold text-gray-700">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Profile Preview"
+                    width={80}
+                    height={80}
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <span>CON</span>
+                )}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
-                <Edit2 className="w-3 h-3 text-white" />
-              </div>
+
+              {/* Botão de editar */}
+              <label htmlFor="image-upload">
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center cursor-pointer">
+                  <Edit2 className="w-3 h-3 text-white" />
+                </div>
+              </label>
+
+              {/* Input escondido */}
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
             </div>
           </div>
 
@@ -122,7 +184,7 @@ export default function ProfileScreen() {
             ) : (
               <div>
                 <Label htmlFor="empresa" className="text-sm text-gray-600">
-                  Empresa
+                  Razão Social
                 </Label>
                 <Input
                   id="empresa"
@@ -140,6 +202,8 @@ export default function ProfileScreen() {
                   CPF
                 </Label>
                 <Input
+                  readOnly
+                  disabled
                   id="cpf"
                   value={formData.cpf}
                   onChange={(e) => handleInputChange('cpf', e.target.value)}
@@ -153,6 +217,8 @@ export default function ProfileScreen() {
                   CNPJ
                 </Label>
                 <Input
+                  readOnly
+                  disabled
                   id="cnpj"
                   value={formData.cnpj}
                   onChange={(e) => handleInputChange('cnpj', e.target.value)}
@@ -170,6 +236,8 @@ export default function ProfileScreen() {
                 id="email"
                 type="email"
                 value={formData.email}
+                readOnly
+                disabled
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className="mt-1"
                 placeholder="lorem@ipsum.com.br"
@@ -303,23 +371,21 @@ export default function ProfileScreen() {
 
   return (
     <main className="flex flex-col min-h-screen">
-      <div className="w-full flex items-center justify-between p-4 border-b">
-        <Button variant="ghost" size="sm" className="p-0 h-auto">
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
+      <div className="w-full flex items-center justify-center p-4 border-b">
         <h1 className="text-lg font-medium">Perfil</h1>
         <div className="w-5" />
       </div>
 
       <div className="max-w-2xl w-full mx-auto bg-white flex-1">
         <div className="flex justify-center py-6">
-          <div className="relative">
-            <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center text-2xl font-bold text-gray-700">
-              CON
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
-              <Edit2 className="w-3 h-3 text-white" />
-            </div>
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center text-2xl font-bold text-gray-700">
+            <img
+              src={user?.imagemUrl || '/images/default-avatar.png'}
+              alt="Profile Preview"
+              width={80}
+              height={80}
+              className="object-cover w-full h-full"
+            />
           </div>
         </div>
 

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useNavigate } from 'react-router-dom';
 
 interface ProjectCardProps {
   id: string;
@@ -16,10 +17,16 @@ export function ProjectCard({
   title,
   subtitle,
   progress,
+  id,
   imageUrl,
 }: ProjectCardProps) {
+  const navigate = useNavigate();
+
   return (
-    <Card className="relative overflow-hidden h-48 cursor-pointer group hover:scale-105 transition-transform">
+    <Card
+      onClick={() => navigate(`/project/${id}`)}
+      className="relative overflow-hidden h-48 cursor-pointer group hover:scale-105 transition-transform"
+    >
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${imageUrl})` }}

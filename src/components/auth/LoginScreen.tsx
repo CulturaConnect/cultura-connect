@@ -22,6 +22,7 @@ const LoginScreen = () => {
     await Login({ email, senha: password });
 
     setLoading(false);
+    navigate('/');
   };
 
   return (

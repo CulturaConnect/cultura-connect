@@ -20,6 +20,7 @@ export interface AuthUser {
   cpf: string | null;
   inscricaoEstadual: string | null;
   inscricaoMunicipal: string | null;
+  imagemUrl: string | null;
 }
 
 interface AuthContextData {
@@ -28,6 +29,7 @@ interface AuthContextData {
   Login(user: object): Promise<void>;
   Logout(): void;
   forgotPasswordSend(email: string): Promise<boolean>;
+  updateUser(userData: AuthUser): void;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -57,6 +59,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     sessionStorage.setItem('@App:token', response.token);
   }
 
+  function updateUser(userData: AuthUser) {
+    setUser(userData);
+    sessionStorage.setItem('@App:user', JSON.stringify(userData));
+  }
+
   async function forgotPasswordSend(email: string) {
     const res = await forgotPassword(email);
 
@@ -73,7 +80,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <AuthContext.Provider
-      value={{ signed: Boolean(user), user, Login, Logout, forgotPasswordSend }}
+      value={{
+        signed: Boolean(user),
+        user,
+        Login,
+        Logout,
+        forgotPasswordSend,
+        updateUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
