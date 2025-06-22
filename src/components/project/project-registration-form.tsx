@@ -40,6 +40,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormDescription,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -113,6 +114,8 @@ const baseSchema = z.object({
   cronograma_atividades: z
     .array(cronogramaSchema)
     .min(1, 'Cronograma é obrigatório'),
+  orcamento_previsto: z.string().min(1, 'Orçamento previsto é obrigatório'),
+  orcamento_gasto: z.string().optional(),
   responsavel_principal_id: z
     .string()
     .min(1, 'Responsável principal é obrigatório'),
@@ -233,6 +236,8 @@ export default function ProjectRegistrationForm() {
       resumo: '',
       objetivos_gerais: '',
       metas: '',
+      orcamento_previsto: '',
+      orcamento_gasto: '',
       cronograma_atividades: [
         {
           titulo: '',
@@ -305,6 +310,8 @@ export default function ProjectRegistrationForm() {
           objetivos_gerais: true,
           metas: true,
           cronograma_atividades: true,
+          orcamento_previsto: true,
+          orcamento_gasto: true,
         }),
         6: baseSchema.pick({
           responsavel_principal_id: true,
@@ -960,7 +967,38 @@ export default function ProjectRegistrationForm() {
               >
                 Adicionar atividade
               </Button>
-            </div>
+      </div>
+    </FormItem>
+  )}
+      />
+
+      <FormField
+        control={form.control}
+        name="orcamento_previsto"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Orçamento previsto *</FormLabel>
+            <FormControl>
+              <Input type="number" placeholder="Valor previsto" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="orcamento_gasto"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Orçamento gasto</FormLabel>
+            <FormControl>
+              <Input type="number" placeholder="Valor gasto" {...field} />
+            </FormControl>
+            <FormDescription>
+              Esse valor pode ser alterado no decorrer do projeto
+            </FormDescription>
+            <FormMessage />
           </FormItem>
         )}
       />
