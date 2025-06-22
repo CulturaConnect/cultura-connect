@@ -21,6 +21,8 @@ export async function createProject(data: CreateProject) {
   formData.append('resumo', data.resumo ?? '');
   formData.append('objetivos_gerais', data.objetivos_gerais ?? '');
   formData.append('metas', data.metas ?? '');
+  formData.append('orcamento_previsto', data.orcamento_previsto ?? '');
+  formData.append('orcamento_gasto', data.orcamento_gasto ?? '');
   formData.append('responsavel_principal_id', data.responsavel_principal_id);
   formData.append('responsavel_legal_id', data.responsavel_legal_id);
 

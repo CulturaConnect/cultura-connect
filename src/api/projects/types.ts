@@ -14,6 +14,8 @@ export interface CreateProject {
   responsavel_principal_id?: string;
   equipe?: Equipe[];
   responsavel_legal_id?: string;
+  orcamento_previsto?: string;
+  orcamento_gasto?: string;
 }
 
 export interface Modelo {
