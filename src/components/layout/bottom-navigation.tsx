@@ -11,13 +11,20 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   route?: string;
+  external?: boolean;
 }
 
 const navItems: NavItem[] = [
   { id: 'home', label: 'Home', icon: Home, route: '/' },
-  { id: 'conexoes', label: 'Conexões', icon: Users, route: '/conexoes' },
+  {
+    id: 'conexoes',
+    label: 'Capacitação',
+    icon: Users,
+    external: true,
+    route:
+      'https://docs.google.com/spreadsheets/d/1yLMLD4_0IQYUYfKmNgvFIDIaiG4g1GMhJAocyIHLnoo/edit?gid=1094061449#gid=1094061449',
+  },
   { id: 'perfil', label: 'Perfil', icon: User, route: '/me' },
-  { id: 'MENU', label: 'Menu', icon: MenuIcon },
 ];
 
 export function BottomNavigation() {
@@ -40,6 +47,11 @@ export function BottomNavigation() {
             <button
               key={item.id}
               onClick={() => {
+                if (item.external) {
+                  window.open(item.route, '_blank');
+                  return;
+                }
+
                 if (item.route) {
                   navigate(item.route);
                 }

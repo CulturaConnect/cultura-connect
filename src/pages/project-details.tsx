@@ -2,12 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +26,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetProjectByIdQuery } from '@/api/projects/projects.queries';
 import { useAuth } from '@/contexts/auth';
+import { censurarDocumento } from '@/utils/helpers';
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -87,58 +83,60 @@ export default function ProjectDetails() {
           <TabsContent value="details" className="space-y-8">
             {/* Header */}
             <Card className="overflow-hidden border-0 shadow-xl bg-white">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-pink-600/10" />
-            <CardContent className="relative p-8">
-              <div className="flex flex-col lg:flex-row gap-8 items-start">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
-                    <img
-                      src={data?.imagem_url || '/placeholder.svg'}
-                      alt={data?.titulo_oficial}
-                      width={128}
-                      height={128}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-pink-600/10" />
+                <CardContent className="relative p-8">
+                  <div className="flex flex-col lg:flex-row gap-8 items-start">
+                    <div className="relative">
+                      <div className="w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+                        <img
+                          src={data?.imagem_url || '/placeholder.svg'}
+                          alt={data?.titulo_oficial}
+                          width={128}
+                          height={128}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
 
-                <div className="flex-1 space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
-                        {data?.titulo_oficial}
-                      </h1>
-                      <Badge
-                        className={`${getSegmentColor(data?.segmento)} border`}
-                      >
-                        {data?.segmento.charAt(0).toUpperCase() +
-                          data?.segmento.slice(1)}
-                      </Badge>
-                    </div>
-                    <p className="text-lg text-gray-600">{data?.resumo}</p>
-                  </div>
+                    <div className="flex-1 space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
+                            {data?.titulo_oficial}
+                          </h1>
+                          <Badge
+                            className={`${getSegmentColor(
+                              data?.segmento,
+                            )} border`}
+                          >
+                            {data?.segmento.charAt(0).toUpperCase() +
+                              data?.segmento.slice(1)}
+                          </Badge>
+                        </div>
+                        <p className="text-lg text-gray-600">{data?.resumo}</p>
+                      </div>
 
-                  <div className="flex items-center gap-6 text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {formatDate(data?.inicio)} - {formatDate(data?.fim)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      <span>{data?.areas_execucao[0]?.cidade}</span>
+                      <div className="flex items-center gap-6 text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          <span>
+                            {formatDate(data?.inicio)} - {formatDate(data?.fim)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          <span>{data?.areas_execucao[0]?.cidade}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </CardContent>
               </div>
-            </CardContent>
-          </div>
-        </Card>
+            </Card>
 
-        {/* Modelo de Negócio */}
-        <Card className="shadow-lg border-0">
+            {/* Modelo de Negócio */}
+            {/* <Card className="shadow-lg border-0">
           <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
             <CardTitle className="flex items-center gap-2 text-xl">
               <Briefcase className="w-5 h-5 text-purple-600" />
@@ -210,180 +208,193 @@ export default function ProjectDetails() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Detalhes do Projeto */}
-          <Card className="shadow-lg border-0">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Target className="w-5 h-5 text-blue-600" />
-                Detalhes do Projeto
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  Objetivos Gerais
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {data?.objetivos_gerais}
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Metas</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {data?.metas}
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Retenção</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {data?.modelo.retencao}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Localização */}
-          <Card className="shadow-lg border-0">
-            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <MapPin className="w-5 h-5 text-green-600" />
-                Área de Execução
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {data?.areas_execucao.map((area, index) => (
-                <div key={index} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Endereço:
-                      </span>
-                      <p className="text-gray-600 mt-1">
-                        {area.rua}, {area.numero}
-                        {area.complemento && ` - ${area.complemento}`}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">Bairro:</span>
-                      <p className="text-gray-600 mt-1">{area.bairro}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">Cidade:</span>
-                      <p className="text-gray-600 mt-1">{area.cidade}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">CEP:</span>
-                      <p className="text-gray-600 mt-1">{area.cep}</p>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Detalhes do Projeto */}
+              <Card className="shadow-lg border-0">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Target className="w-5 h-5 text-blue-600" />
+                    Detalhes do Projeto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      Objetivos Gerais
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.objetivos_gerais}
+                    </p>
                   </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Cronograma */}
-          <Card className="shadow-lg border-0">
-            <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 border-b">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Clock className="w-5 h-5 text-orange-600" />
-                Cronograma de Atividades
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {data?.cronograma_atividades.map((atividade, index) => (
-                  <div
-                    key={index}
-                    className="flex gap-3 p-4 bg-gray-50 rounded-lg"
-                  >
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <div className="space-y-1">
-                      <h4 className="font-medium text-gray-900">
-                        {atividade.titulo}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        {atividade.descricao}
-                      </p>
-                    </div>
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Metas</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.metas}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Equipe */}
-          <Card className="shadow-lg border-0">
-            <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Users className="w-5 h-5 text-indigo-600" />
-                Equipe do Projeto
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {data?.equipe.map((membro, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
-                  >
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src="/placeholder.svg" />
-                      <AvatarFallback className="bg-indigo-100 text-indigo-600 font-semibold">
-                        {membro.nome
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">
-                        {membro.nome}
-                      </h4>
-                      <p className="text-sm text-gray-600">{membro.funcao}</p>
-                      <p className="text-xs text-gray-500">
-                        CPF/CNPJ: {membro.cpf_cnpj}
-                      </p>
-                    </div>
-                    <UserCheck className="w-5 h-5 text-green-600" />
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      Retenção
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.modelo.retencao}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        </TabsContent>
+                </CardContent>
+              </Card>
 
-        {isOwner && (
-          <TabsContent value="manage">
-            <Card className="shadow-lg border-0 p-6 space-y-4">
-              <div>
-                <Label htmlFor="status">Status do Projeto</Label>
-                <Input id="status" placeholder="ex: Em andamento" />
-              </div>
-              <div>
-                <Label htmlFor="gasto">Gasto do Projeto</Label>
-                <Input id="gasto" placeholder="R$ 0,00" />
-              </div>
-              <div>
-                <Label htmlFor="atividade">Nova Atividade</Label>
-                <Textarea id="atividade" placeholder="Descreva a nova atividade" />
-              </div>
-              <Button>Salvar alterações</Button>
-            </Card>
+              {/* Localização */}
+              <Card className="shadow-lg border-0">
+                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <MapPin className="w-5 h-5 text-green-600" />
+                    Área de Execução
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {data?.areas_execucao.map((area, index) => (
+                    <div key={index} className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            Endereço:
+                          </span>
+                          <p className="text-gray-600 mt-1">
+                            {area.rua}, {area.numero}
+                            {area.complemento && ` - ${area.complemento}`}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            Bairro:
+                          </span>
+                          <p className="text-gray-600 mt-1">{area.bairro}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            Cidade:
+                          </span>
+                          <p className="text-gray-600 mt-1">{area.cidade}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            CEP:
+                          </span>
+                          <p className="text-gray-600 mt-1">{area.cep}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Cronograma */}
+              <Card className="shadow-lg border-0">
+                <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                    Cronograma de Atividades
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {data?.cronograma_atividades.map((atividade, index) => (
+                      <div
+                        key={index}
+                        className="flex gap-3 p-4 bg-gray-50 rounded-lg"
+                      >
+                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="space-y-1">
+                          <h4 className="font-medium text-gray-900">
+                            {atividade.titulo}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {atividade.descricao}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Equipe */}
+              <Card className="shadow-lg border-0">
+                <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Users className="w-5 h-5 text-indigo-600" />
+                    Equipe do Projeto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {data?.equipe.map((membro, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+                      >
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src="/placeholder.svg" />
+                          <AvatarFallback className="bg-indigo-100 text-indigo-600 font-semibold">
+                            {membro.nome
+                              .split(' ')
+                              .map((n) => n[0])
+                              .join('')
+                              .slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">
+                            {membro.nome}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {membro.funcao}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            CPF/CNPJ: {censurarDocumento(membro.cpf_cnpj)}
+                          </p>
+                        </div>
+                        <UserCheck className="w-5 h-5 text-green-600" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
-        )}
+
+          {isOwner && (
+            <TabsContent value="manage">
+              <Card className="shadow-lg border-0 p-6 space-y-4">
+                <div>
+                  <Label htmlFor="status">Status do Projeto</Label>
+                  <Input id="status" placeholder="ex: Em andamento" />
+                </div>
+                <div>
+                  <Label htmlFor="gasto">Gasto do Projeto</Label>
+                  <Input id="gasto" placeholder="R$ 0,00" />
+                </div>
+                <div>
+                  <Label htmlFor="atividade">Nova Atividade</Label>
+                  <Textarea
+                    id="atividade"
+                    placeholder="Descreva a nova atividade"
+                  />
+                </div>
+                <Button>Salvar alterações</Button>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
