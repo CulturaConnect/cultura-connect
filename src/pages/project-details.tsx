@@ -3,6 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import {
   Calendar,
   MapPin,
   Target,
@@ -20,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetProjectByIdQuery } from '@/api/projects/projects.queries';
+import { useAuth } from '@/contexts/auth';
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -42,8 +53,10 @@ function getSegmentColor(segmento: string) {
 export default function ProjectDetails() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const { data, isLoading } = useGetProjectByIdQuery(projectId);
+  const isOwner = user?.id === data?.company_id;
 
   if (isLoading) {
     return (
@@ -64,9 +77,16 @@ export default function ProjectDetails() {
         <div className="w-5" />
       </div>
 
-      <div className="max-w-6xl mx-auto space-y-8 p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
-        {/* Header */}
-        <Card className="overflow-hidden border-0 shadow-xl bg-white">
+      <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
+        <Tabs defaultValue="details" className="space-y-8">
+          <TabsList>
+            <TabsTrigger value="details">Detalhes</TabsTrigger>
+            {isOwner && <TabsTrigger value="manage">Gerenciar</TabsTrigger>}
+          </TabsList>
+
+          <TabsContent value="details" className="space-y-8">
+            {/* Header */}
+            <Card className="overflow-hidden border-0 shadow-xl bg-white">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-pink-600/10" />
             <CardContent className="relative p-8">
@@ -343,6 +363,28 @@ export default function ProjectDetails() {
             </CardContent>
           </Card>
         </div>
+        </TabsContent>
+
+        {isOwner && (
+          <TabsContent value="manage">
+            <Card className="shadow-lg border-0 p-6 space-y-4">
+              <div>
+                <Label htmlFor="status">Status do Projeto</Label>
+                <Input id="status" placeholder="ex: Em andamento" />
+              </div>
+              <div>
+                <Label htmlFor="gasto">Gasto do Projeto</Label>
+                <Input id="gasto" placeholder="R$ 0,00" />
+              </div>
+              <div>
+                <Label htmlFor="atividade">Nova Atividade</Label>
+                <Textarea id="atividade" placeholder="Descreva a nova atividade" />
+              </div>
+              <Button>Salvar alterações</Button>
+            </Card>
+          </TabsContent>
+        )}
+        </Tabs>
       </div>
     </div>
   );
