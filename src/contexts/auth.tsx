@@ -5,6 +5,8 @@ import React, {
   useContext,
   ReactNode,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getToken, setToken, removeToken, isTokenExpired } from '@/utils/auth';
 
 import { forgotPassword, login } from '@/services/auth';
 import api from '@/lib/api';
@@ -38,15 +40,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const storagedUser = sessionStorage.getItem('@App:user');
-    const storagedToken = sessionStorage.getItem('@App:token');
+    const storagedUser = localStorage.getItem('@App:user');
+    const storagedToken = getToken();
 
-    if (storagedToken && storagedUser) {
+    if (storagedToken && storagedUser && !isTokenExpired(storagedToken)) {
       setUser(JSON.parse(storagedUser));
       api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
+    } else if (storagedToken) {
+      Logout();
     }
+  }, []);
+
+  useEffect(() => {
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          Logout();
+        }
+        return Promise.reject(error);
+      },
+    );
+
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = getToken();
+      if (token && isTokenExpired(token)) {
+        Logout();
+      }
+    }, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   async function Login(userData: object) {
@@ -55,13 +86,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser(response.user);
     api.defaults.headers.Authorization = `Bearer ${response.token}`;
 
-    sessionStorage.setItem('@App:user', JSON.stringify(response.user));
-    sessionStorage.setItem('@App:token', response.token);
+    localStorage.setItem('@App:user', JSON.stringify(response.user));
+    setToken(response.token);
   }
 
   function updateUser(userData: AuthUser) {
     setUser(userData);
-    sessionStorage.setItem('@App:user', JSON.stringify(userData));
+    localStorage.setItem('@App:user', JSON.stringify(userData));
   }
 
   async function forgotPasswordSend(email: string) {
@@ -76,6 +107,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   function Logout() {
     setUser(null);
+    removeToken();
+    localStorage.removeItem('@App:user');
+    delete api.defaults.headers.Authorization;
+    navigate('/auth/login');
   }
 
   return (
