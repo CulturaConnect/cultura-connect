@@ -4,6 +4,7 @@ import { Bell, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSearchParams } from 'react-router-dom';
+import Logo from '../auth/Logo';
 
 export function Header() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,10 +23,7 @@ export function Header() {
       {/* Logo and Notification */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">C</span>
-          </div>
-          <span className="text-xl font-bold text-gray-800">OON</span>
+          <img src="/Logo.svg" alt="Logo" width={90} />
         </div>
 
         <Button variant="ghost" size="icon" className="relative">

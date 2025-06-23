@@ -11,6 +11,8 @@ export function useUpdateProfile() {
     onSuccess: (data) => {
       updateUser(data);
       toast.success('Perfil atualizado com sucesso!');
+
+      return true;
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {

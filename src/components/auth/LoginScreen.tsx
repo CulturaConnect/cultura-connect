@@ -26,7 +26,7 @@ const LoginScreen = () => {
   };
 
   return (
-    <div className="animate-slide-up flex flex-col items-center w-full max-w-5xl">
+    <div className="flex flex-col items-center w-full max-w-5xl">
       <Logo />
 
       <div className="rounded-3xl p-6 w-full mt-4">

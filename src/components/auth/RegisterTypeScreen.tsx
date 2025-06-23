@@ -7,7 +7,7 @@ const RegisterTypeScreen = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="animate-slide-up flex flex-col items-center w-full max-w-5xl justify-between h-screen">
+    <div className="flex flex-col items-center w-full max-w-5xl justify-between h-full">
       <div className="w-full flex items-center justify-center flex-col flex-1">
         <Logo />
 

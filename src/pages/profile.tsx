@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { BottomNavigation } from '@/components/layout/bottom-navigation';
 import { useAuth } from '@/contexts/auth';
 import { useUpdateProfile } from '@/api/users/users.queries';
+import { toast } from 'sonner';
+import Spinner from '@/components/ui/spinner';
 
 export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
@@ -34,7 +36,7 @@ export default function ProfileScreen() {
     confirmarSenha: '',
   });
 
-  const { mutateAsync } = useUpdateProfile();
+  const { mutateAsync, isPending } = useUpdateProfile();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -60,6 +62,14 @@ export default function ProfileScreen() {
     const { nome, telefone, senhaAtual, novaSenha, confirmarSenha, imagem } =
       formData;
 
+    if (novaSenha && novaSenha !== confirmarSenha) {
+      toast.error(
+        'As senhas não coincidem. Por favor, verifique e tente novamente.',
+      );
+
+      return;
+    }
+
     const data = new FormData();
 
     if (user?.tipo === 'company') {
@@ -75,8 +85,18 @@ export default function ProfileScreen() {
       data.append('imagem', imagem || '');
     }
 
-    await mutateAsync(data);
-    setIsEditing(false);
+    const res = await mutateAsync(data);
+
+    if (res) {
+      setFormData((prev) => ({
+        ...prev,
+        senhaAtual: '',
+        novaSenha: '',
+        confirmarSenha: '',
+      }));
+
+      setIsEditing(false);
+    }
   };
 
   const handleBack = () => {
@@ -100,6 +120,8 @@ export default function ProfileScreen() {
         novaSenha: '',
         confirmarSenha: '',
       });
+
+      setPreviewUrl(user.imagemUrl || null);
     }
   }, [user]);
 
@@ -115,6 +137,9 @@ export default function ProfileScreen() {
       </main>
     );
   }
+
+  console.log('User:', user);
+  console.log('User data:', formData);
 
   if (isEditing) {
     return (
@@ -145,7 +170,7 @@ export default function ProfileScreen() {
                     className="object-cover w-full h-full"
                   />
                 ) : (
-                  <span>CON</span>
+                  <span>{user?.nome?.charAt(0).toUpperCase() || 'U'}</span>
                 )}
               </div>
 
@@ -352,15 +377,20 @@ export default function ProfileScreen() {
           <div className="flex gap-3 p-4 mt-8">
             <Button
               variant="outline"
-              className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+              disabled={isPending}
+              className="flex-1 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700"
               onClick={handleBack}
             >
               Voltar
             </Button>
             <Button
+              disabled={isPending}
               className="flex-1 bg-teal-600 hover:bg-teal-700"
               onClick={handleSave}
             >
+              {isPending && (
+                <div className="size-4 border-4 border-secondary border-t-transparent rounded-full animate-spin mr-2" />
+              )}
               Salvar
             </Button>
           </div>

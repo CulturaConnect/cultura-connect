@@ -47,7 +47,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const storagedToken = getToken();
 
     if (storagedToken && storagedUser && !isTokenExpired(storagedToken)) {
-      setUser(JSON.parse(storagedUser));
+      const parsetStoragedUser = JSON.parse(storagedUser);
+      const user = parsetStoragedUser.user || parsetStoragedUser;
+      const {
+        type,
+        nome_completo,
+        imagem_url,
+        inscricao_estadual,
+        inscricao_municipal,
+        is_mei,
+        razao_social,
+        ...rest
+      } = user;
+      setUser({
+        ...rest,
+        nome: nome_completo || user.nome || '',
+        tipo: type || parsetStoragedUser.tipo || 'person',
+        imagemUrl: imagem_url || user.imagem_url || null,
+        inscricaoEstadual:
+          inscricao_estadual || user.inscricao_estadual || null,
+        inscricaoMunicipal:
+          inscricao_municipal || user.inscricao_municipal || null,
+
+        isMei: is_mei || user.is_mei || false,
+        razaoSocial: razao_social || user.razao_social || null,
+      });
       api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
     } else if (storagedToken) {
       Logout();

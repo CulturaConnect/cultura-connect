@@ -19,6 +19,11 @@ import Logo from './Logo';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth';
+import {
+  useCheckResetCodeMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
+} from '@/api/auth/auth.queries';
 
 const emailSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -45,13 +50,19 @@ type PasswordData = z.infer<typeof passwordSchema>;
 export default function ForgotPasswordScreen() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
   const { forgotPasswordSend } = useAuth();
 
   const navigate = useNavigate();
+
+  const { mutateAsync } = useCheckResetCodeMutation();
+
+  const { mutateAsync: resetPasswordMutation } = useResetPasswordMutation();
+
+  const { mutateAsync: forgotPasswordSendMutation } =
+    useForgotPasswordMutation();
 
   const emailForm = useForm<EmailData>({
     resolver: zodResolver(emailSchema),
@@ -72,28 +83,36 @@ export default function ForgotPasswordScreen() {
 
   const sendEmail = async (data: EmailData) => {
     setLoading(true);
-    await forgotPasswordSend(data.email);
-    setEmail(data.email);
-    setStep(2);
+    const res = await forgotPasswordSendMutation(data.email);
+    if (res) {
+      setStep(2);
+    }
     setLoading(false);
   };
 
   const validateCode = async (data: CodeData) => {
     setLoading(true);
-    await new Promise((res) => setTimeout(res, 1000));
-    if (data.code === '123456') {
+    const res = await mutateAsync({
+      code: data.code,
+      email: emailForm.getValues('email'),
+    });
+    if (res) {
       setStep(3);
-    } else {
-      codeForm.setError('code', { message: 'Código inválido' });
     }
     setLoading(false);
   };
 
   const resetPassword = async (data: PasswordData) => {
     setLoading(true);
-    await new Promise((res) => setTimeout(res, 1500));
-    setSuccess(true);
-    setLoading(false);
+    const res = await resetPasswordMutation({
+      password: data.password,
+      code: codeForm.getValues('code'),
+      email: emailForm.getValues('email'),
+    });
+    if (res) {
+      setSuccess(true);
+      setLoading(false);
+    }
   };
 
   const renderStep = () => {
@@ -256,7 +275,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <div className="animate-slide-up max-w-2xl px-6 mx-auto">
+    <div className="max-w-2xl container px-6 mx-auto">
       <div className="flex items-center mb-6 justify-center">
         <Logo />
       </div>

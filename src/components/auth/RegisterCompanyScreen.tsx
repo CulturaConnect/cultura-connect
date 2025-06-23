@@ -84,7 +84,7 @@ export default function RegisterCompanyScreen() {
   };
 
   return (
-    <div className="animate-slide-up flex flex-col items-center w-full max-w-2xl mx-auto">
+    <div className="flex flex-col items-center w-full max-w-2xl mx-auto">
       <div className="w-full flex flex-col items-center">
         <div className="mb-6">
           <Logo />

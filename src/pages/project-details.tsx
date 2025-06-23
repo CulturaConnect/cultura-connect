@@ -344,13 +344,9 @@ export default function ProjectDetails() {
                         className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
                       >
                         <Avatar className="w-12 h-12">
-                          <AvatarImage src="/placeholder.svg" />
+                          <AvatarImage src="./imagem.svg" />
                           <AvatarFallback className="bg-indigo-100 text-indigo-600 font-semibold">
-                            {membro.nome
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')
-                              .slice(0, 2)}
+                            {membro.nome.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
