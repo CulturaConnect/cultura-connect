@@ -18,6 +18,13 @@ export interface CreateProject {
   orcamento_gasto?: string;
 }
 
+export interface UpdateProject {
+  cronograma_atividades?: CronogramaAtividade[];
+  status?: string;
+  orcamento_previsto?: string;
+  orcamento_gasto?: string;
+}
+
 export interface Modelo {
   missao?: string;
   visao?: string;
@@ -47,4 +54,28 @@ export interface Equipe {
   nome?: string;
   funcao?: string;
   cpf_cnpj?: string;
+}
+
+export interface Project {
+  id: string;
+  nome: string;
+  segmento: string;
+  inicio: string;
+  fim: string;
+  modelo: Modelo;
+  titulo_oficial: string;
+  imagem_url: string;
+  areas_execucao: AreasExecucao[];
+  resumo: string;
+  objetivos_gerais: string;
+  metas: string;
+  cronograma_atividades: CronogramaAtividade[];
+  responsavel_principal_id: string | null;
+  equipe: Equipe[];
+  responsavel_legal_id: string | null;
+  company_id: string;
+  status: string;
+  orcamento_previsto: number;
+  orcamento_gasto: number;
+  created_at: string;
 }

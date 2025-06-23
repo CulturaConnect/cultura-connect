@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import { CreateProject } from './types';
+import { CreateProject, Project, UpdateProject } from './types';
 
 export async function createProject(data: CreateProject) {
   const formData = new FormData();
@@ -45,10 +45,20 @@ export async function createProject(data: CreateProject) {
 
 export async function getProjects() {
   const response = await api.get('/projects');
-  return response.data;
+  return response.data as Project[];
 }
 
 export async function getProjectById(projectId: string) {
   const response = await api.get(`/projects/${projectId}`);
+  return response.data as Project;
+}
+
+export async function updateProject(projectId: string, data: UpdateProject) {
+  const response = await api.patch(`/projects/${projectId}`, data, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
   return response.data;
 }

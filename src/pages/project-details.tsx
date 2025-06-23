@@ -3,22 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import {
   Calendar,
   MapPin,
   Target,
   Users,
-  Briefcase,
-  Eye,
-  Heart,
-  TrendingUp,
-  DollarSign,
   UserCheck,
-  Gift,
   Clock,
   CheckCircle,
   ArrowLeft,
@@ -27,6 +17,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useGetProjectByIdQuery } from '@/api/projects/projects.queries';
 import { useAuth } from '@/contexts/auth';
 import { censurarDocumento } from '@/utils/helpers';
+import EditProjectTab from '@/components/project/edit-project';
+import { useState } from 'react';
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -52,6 +44,7 @@ export default function ProjectDetails() {
   const { user } = useAuth();
 
   const { data, isLoading } = useGetProjectByIdQuery(projectId);
+  const [tabs, setTabs] = useState<string>('details');
   const isOwner = user?.id === data?.company_id;
 
   if (isLoading) {
@@ -73,8 +66,13 @@ export default function ProjectDetails() {
         <div className="w-5" />
       </div>
 
-      <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
-        <Tabs defaultValue="details" className="space-y-8">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
+        <Tabs
+          value={tabs}
+          defaultValue="details"
+          className="space-y-8"
+          onValueChange={setTabs}
+        >
           <TabsList>
             <TabsTrigger value="details">Detalhes</TabsTrigger>
             {isOwner && <TabsTrigger value="manage">Gerenciar</TabsTrigger>}
@@ -371,24 +369,7 @@ export default function ProjectDetails() {
 
           {isOwner && (
             <TabsContent value="manage">
-              <Card className="shadow-lg border-0 p-6 space-y-4">
-                <div>
-                  <Label htmlFor="status">Status do Projeto</Label>
-                  <Input id="status" placeholder="ex: Em andamento" />
-                </div>
-                <div>
-                  <Label htmlFor="gasto">Gasto do Projeto</Label>
-                  <Input id="gasto" placeholder="R$ 0,00" />
-                </div>
-                <div>
-                  <Label htmlFor="atividade">Nova Atividade</Label>
-                  <Textarea
-                    id="atividade"
-                    placeholder="Descreva a nova atividade"
-                  />
-                </div>
-                <Button>Salvar alterações</Button>
-              </Card>
+              <EditProjectTab project={data} setInitialTab={setTabs} />
             </TabsContent>
           )}
         </Tabs>

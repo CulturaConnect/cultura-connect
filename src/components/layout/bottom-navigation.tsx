@@ -3,8 +3,9 @@
 import type React from 'react';
 
 import { useState } from 'react';
-import { Home, Users, User, Bike, MenuIcon } from 'lucide-react';
+import { Home, Users, User, Bike, MenuIcon, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/auth';
 
 interface NavItem {
   id: string;
@@ -29,6 +30,8 @@ const navItems: NavItem[] = [
 
 export function BottomNavigation() {
   const navigate = useNavigate();
+
+  const { Logout } = useAuth();
 
   const pathname = window.location.pathname;
 
@@ -77,6 +80,13 @@ export function BottomNavigation() {
             </button>
           );
         })}
+        <button
+          onClick={() => Logout()}
+          className="flex flex-col items-center space-y-1 py-2 px-3 rounded-lg transition-colors text-gray-500 hover:text-gray-700"
+        >
+          <LogOut className="h-5 w-5 text-gray-500" />
+          <span className="text-xs font-medium text-gray-500">Sair</span>
+        </button>
       </div>
     </div>
   );

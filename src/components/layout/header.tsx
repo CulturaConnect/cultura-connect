@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSearchParams } from 'react-router-dom';
 import Logo from '../auth/Logo';
+import NotificationSheet from './notifications-sheet';
 
 export function Header() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,10 +27,7 @@ export function Header() {
           <img src="/Logo.svg" alt="Logo" width={90} />
         </div>
 
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-gray-600" />
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
-        </Button>
+        <NotificationSheet />
       </div>
 
       {/* Search Bar */}
