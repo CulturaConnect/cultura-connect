@@ -56,6 +56,7 @@ import { cn } from '@/lib/utils';
 import { useGetCompanyUsers } from '@/api/companies/companies.queries';
 import { useAuth } from '@/contexts/auth';
 import { useCreateProjectMutation } from '@/api/projects/projects.queries';
+import { useNavigate } from 'react-router-dom';
 
 const modeloSchema = z.object({
   missao: z.string().min(1, 'Campo obrigatório'),
@@ -267,6 +268,8 @@ export default function ProjectRegistrationForm() {
 
   const { control } = form;
 
+  const navigate = useNavigate();
+
   const { data } = useGetCompanyUsers(user?.id || '');
 
   const { fields, append, remove } = useFieldArray({
@@ -356,7 +359,11 @@ export default function ProjectRegistrationForm() {
   const { mutateAsync, isPending } = useCreateProjectMutation();
 
   const onSubmit = async (values: FormData) => {
-    await mutateAsync(values);
+    const res = await mutateAsync(values);
+
+    if (res) {
+      navigate('/', { replace: true });
+    }
   };
 
   useEffect(() => {
@@ -391,28 +398,30 @@ export default function ProjectRegistrationForm() {
 
   const renderStepIndicator = () => (
     <div className="flex flex-wrap justify-center gap-4 mb-4">
-      {Array.from({ length: totalSteps }, (_, idx) => idx + 1).map((step, index) => (
-        <div key={step} className="flex items-center">
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
-              step === currentStep
-                ? 'bg-blue-500 text-white scale-110 shadow-md'
-                : step < currentStep
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-200 text-gray-600'
-            }`}
-          >
-            {step}
-          </div>
-          {index < 5 && (
+      {Array.from({ length: totalSteps }, (_, idx) => idx + 1).map(
+        (step, index) => (
+          <div key={step} className="flex items-center">
             <div
-              className={`hidden sm:block w-12 h-0.5 transition-colors duration-200 ${
-                step < currentStep ? 'bg-green-500' : 'bg-gray-200'
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
+                step === currentStep
+                  ? 'bg-blue-500 text-white scale-110 shadow-md'
+                  : step < currentStep
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-200 text-gray-600'
               }`}
-            />
-          )}
-        </div>
-      ))}
+            >
+              {step}
+            </div>
+            {index < 5 && (
+              <div
+                className={`hidden sm:block w-12 h-0.5 transition-colors duration-200 ${
+                  step < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                }`}
+              />
+            )}
+          </div>
+        ),
+      )}
     </div>
   );
 
@@ -996,9 +1005,9 @@ export default function ProjectRegistrationForm() {
               >
                 Adicionar atividade
               </Button>
-      </div>
-    </FormItem>
-  )}
+            </div>
+          </FormItem>
+        )}
       />
 
       <FormField
@@ -1096,7 +1105,7 @@ export default function ProjectRegistrationForm() {
         render={() => (
           <FormItem>
             <FormLabel>Equipe de trabalho</FormLabel>
-            <div className="space-y-4 max-h-[450px] overflow-y-auto  pb-4">
+            <div className="space-y-4 max-h-[550px] overflow-y-auto  pb-4">
               {equipeFields.map((item, index) => (
                 <div
                   key={item.id}
@@ -1198,7 +1207,14 @@ export default function ProjectRegistrationForm() {
   );
 
   const steps = isCompany
-    ? [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6]
+    ? [
+        renderStep1,
+        renderStep2,
+        renderStep3,
+        renderStep4,
+        renderStep5,
+        renderStep6,
+      ]
     : [renderStep1, renderStep2, renderStep4, renderStep5, renderStep6];
 
   const renderSteps = () => (
@@ -1215,7 +1231,10 @@ export default function ProjectRegistrationForm() {
     <div className="max-w-2xl mx-auto px-2 flex flex-col flex-1 overflow-y-auto">
       <div className="mb-6 border-b">
         <div className="flex items-center justify-center w-full mb-1 relative">
-          <ChevronLeft className="h-5 w-5 text-gray-600 absolute left-0" />
+          <ChevronLeft
+            onClick={() => navigate(-1)}
+            className="h-5 w-5 text-gray-600 absolute left-0"
+          />
           <h1 className="text-xl font-semibold ml-2 text-center">
             Cadastrar projeto
           </h1>
@@ -1291,7 +1310,14 @@ export default function ProjectRegistrationForm() {
               </Button>
 
               {currentStep === totalSteps ? (
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600">
+                <Button
+                  disabled={!isStepValid || isPending}
+                  type="submit"
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
+                  {isPending && (
+                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                  )}
                   Finalizar
                 </Button>
               ) : (

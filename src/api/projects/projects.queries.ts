@@ -10,6 +10,7 @@ export function useCreateProjectMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Projeto criado com sucesso!');
+      return true;
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {

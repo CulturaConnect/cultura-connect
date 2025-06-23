@@ -28,7 +28,7 @@ export function ProjectCard({
       className="relative overflow-hidden h-48 cursor-pointer group hover:scale-105 transition-transform"
     >
       <div
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-center "
         style={{ backgroundImage: `url(${imageUrl})` }}
       >
         <div className="absolute inset-0 bg-black/60" />
