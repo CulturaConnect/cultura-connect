@@ -23,8 +23,12 @@ export async function createProject(data: CreateProject) {
   formData.append('metas', data.metas ?? '');
   formData.append('orcamento_previsto', data.orcamento_previsto ?? '');
   formData.append('orcamento_gasto', data.orcamento_gasto ?? '');
-  formData.append('responsavel_principal_id', data.responsavel_principal_id);
-  formData.append('responsavel_legal_id', data.responsavel_legal_id);
+  if (data.responsavel_principal_id) {
+    formData.append('responsavel_principal_id', data.responsavel_principal_id);
+  }
+  if (data.responsavel_legal_id) {
+    formData.append('responsavel_legal_id', data.responsavel_legal_id);
+  }
 
   if (data.imagem) {
     formData.append('imagem', data.imagem);

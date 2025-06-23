@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -88,42 +88,46 @@ const equipeSchema = z.object({
   cpf_cnpj: z.string().min(11, 'CPF/CNPJ inválido'),
 });
 
-const baseSchema = z.object({
-  nome: z.string().min(2, 'Nome do projeto é obrigatório'),
-  segmento: z.string().min(1, 'Segmento é obrigatório'),
-  inicio: z.string().min(1, 'Data de início é obrigatória'),
-  fim: z.string().min(1, 'Data de fim é obrigatória'),
-  imagem: z
-    .instanceof(File)
-    .refine((file) => file.size <= 10 * 1024 * 1024, 'Arquivo maior que 10MB')
-    .refine(
-      (file) =>
-        ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'].includes(
-          file.type,
-        ),
-      'Formato inválido',
-    ),
-  modelo: modeloSchema,
-  titulo_oficial: z.string().min(2, 'Título oficial é obrigatório'),
-  areas_execucao: z
-    .array(areaExecucaoSchema)
-    .min(1, 'Pelo menos uma área de execução é obrigatória'),
-  resumo: z.string().min(10, 'Resumo é obrigatório'),
-  objetivos_gerais: z.string().min(10, 'Objetivos gerais são obrigatórios'),
-  metas: z.string().min(10, 'Metas são obrigatórias'),
-  cronograma_atividades: z
-    .array(cronogramaSchema)
-    .min(1, 'Cronograma é obrigatório'),
-  orcamento_previsto: z.string().min(1, 'Orçamento previsto é obrigatório'),
-  orcamento_gasto: z.string().optional(),
-  responsavel_principal_id: z
-    .string()
-    .min(1, 'Responsável principal é obrigatório'),
-  equipe: z.array(equipeSchema).optional(),
-  responsavel_legal_id: z.string().min(1, 'Responsável legal é obrigatório'),
-});
+function createBaseSchema(isCompany: boolean) {
+  return z.object({
+    nome: z.string().min(2, 'Nome do projeto é obrigatório'),
+    segmento: z.string().min(1, 'Segmento é obrigatório'),
+    inicio: z.string().min(1, 'Data de início é obrigatória'),
+    fim: z.string().min(1, 'Data de fim é obrigatória'),
+    imagem: z
+      .instanceof(File)
+      .refine((file) => file.size <= 10 * 1024 * 1024, 'Arquivo maior que 10MB')
+      .refine(
+        (file) =>
+          ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'].includes(
+            file.type,
+          ),
+        'Formato inválido',
+      ),
+    modelo: modeloSchema,
+    titulo_oficial: z.string().min(2, 'Título oficial é obrigatório'),
+    areas_execucao: z
+      .array(areaExecucaoSchema)
+      .min(1, 'Pelo menos uma área de execução é obrigatória'),
+    resumo: z.string().min(10, 'Resumo é obrigatório'),
+    objetivos_gerais: z.string().min(10, 'Objetivos gerais são obrigatórios'),
+    metas: z.string().min(10, 'Metas são obrigatórias'),
+    cronograma_atividades: z
+      .array(cronogramaSchema)
+      .min(1, 'Cronograma é obrigatório'),
+    orcamento_previsto: z.string().min(1, 'Orçamento previsto é obrigatório'),
+    orcamento_gasto: z.string().optional(),
+    responsavel_principal_id: isCompany
+      ? z.string().min(1, 'Responsável principal é obrigatório')
+      : z.string().optional(),
+    equipe: z.array(equipeSchema).optional(),
+    responsavel_legal_id: isCompany
+      ? z.string().min(1, 'Responsável legal é obrigatório')
+      : z.string().optional(),
+  });
+}
 
-type FormData = z.infer<typeof baseSchema>;
+type FormData = z.infer<ReturnType<typeof createBaseSchema>>;
 
 const modelCards = [
   {
@@ -193,6 +197,8 @@ const modelCards = [
 
 export default function ProjectRegistrationForm() {
   const { user } = useAuth();
+  const isCompany = user?.tipo === 'company';
+  const baseSchema = useMemo(() => createBaseSchema(isCompany), [isCompany]);
   const [currentStep, setCurrentStep] = useState(1);
   const [isStepValid, setIsStepValid] = useState(false);
   const [legalResponsible, setLegalResponsible] = useState({
@@ -290,34 +296,55 @@ export default function ProjectRegistrationForm() {
     const values = form.getValues();
 
     try {
-      const stepSchema = {
-        1: baseSchema.pick({
-          nome: true,
-          segmento: true,
-          inicio: true,
-          fim: true,
-        }),
-        2: baseSchema.pick({ modelo: true }),
-        3: baseSchema.pick({
-          responsavel_legal_id: true,
-        }),
-        4: baseSchema.pick({
-          titulo_oficial: true,
-          areas_execucao: true,
-          resumo: true,
-        }),
-        5: baseSchema.pick({
-          objetivos_gerais: true,
-          metas: true,
-          cronograma_atividades: true,
-          orcamento_previsto: true,
-          orcamento_gasto: true,
-        }),
-        6: baseSchema.pick({
-          responsavel_principal_id: true,
-          equipe: true,
-        }),
-      };
+      const stepSchema = isCompany
+        ? {
+            1: baseSchema.pick({
+              nome: true,
+              segmento: true,
+              inicio: true,
+              fim: true,
+            }),
+            2: baseSchema.pick({ modelo: true }),
+            3: baseSchema.pick({ responsavel_legal_id: true }),
+            4: baseSchema.pick({
+              titulo_oficial: true,
+              areas_execucao: true,
+              resumo: true,
+            }),
+            5: baseSchema.pick({
+              objetivos_gerais: true,
+              metas: true,
+              cronograma_atividades: true,
+              orcamento_previsto: true,
+              orcamento_gasto: true,
+            }),
+            6: baseSchema.pick({
+              responsavel_principal_id: true,
+              equipe: true,
+            }),
+          }
+        : {
+            1: baseSchema.pick({
+              nome: true,
+              segmento: true,
+              inicio: true,
+              fim: true,
+            }),
+            2: baseSchema.pick({ modelo: true }),
+            3: baseSchema.pick({
+              titulo_oficial: true,
+              areas_execucao: true,
+              resumo: true,
+            }),
+            4: baseSchema.pick({
+              objetivos_gerais: true,
+              metas: true,
+              cronograma_atividades: true,
+              orcamento_previsto: true,
+              orcamento_gasto: true,
+            }),
+            5: baseSchema.pick({ equipe: true }),
+          };
 
       await stepSchema[currentStep].parseAsync(values);
       setIsStepValid(true);
@@ -348,8 +375,10 @@ export default function ProjectRegistrationForm() {
     validateStep();
   }, [form.watch(), currentStep]);
 
+  const totalSteps = isCompany ? 6 : 5;
+
   const nextStep = () => {
-    if (currentStep < 6) {
+    if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -362,7 +391,7 @@ export default function ProjectRegistrationForm() {
 
   const renderStepIndicator = () => (
     <div className="flex flex-wrap justify-center gap-4 mb-4">
-      {[1, 2, 3, 4, 5, 6].map((step, index) => (
+      {Array.from({ length: totalSteps }, (_, idx) => idx + 1).map((step, index) => (
         <div key={step} className="flex items-center">
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
@@ -1007,55 +1036,59 @@ export default function ProjectRegistrationForm() {
 
   const renderStep6 = () => (
     <div className="space-y-6">
-      <FormField
-        control={form.control}
-        name="responsavel_principal_id"
-        render={({ field }) => (
+      {isCompany && (
+        <>
+          <FormField
+            control={form.control}
+            name="responsavel_principal_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Responsável principal do projeto</FormLabel>
+                <Select
+                  disabled={!data || data.length === 0 || isPending}
+                  onValueChange={(e) => {
+                    field.onChange(e);
+                    const selectedUser = data?.find((user) => user.id === e);
+                    if (selectedUser) {
+                      setPrimaryResponsible({
+                        cpf: selectedUser.cpf,
+                      });
+                    }
+                  }}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o responsável principal" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {data?.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.nome_completo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormItem>
-            <FormLabel>Responsável principal do projeto</FormLabel>
-            <Select
-              disabled={!data || data.length === 0 || isPending}
-              onValueChange={(e) => {
-                field.onChange(e);
-                const selectedUser = data?.find((user) => user.id === e);
-                if (selectedUser) {
-                  setPrimaryResponsible({
-                    cpf: selectedUser.cpf,
-                  });
-                }
-              }}
-              defaultValue={field.value}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o responsável principal" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {data?.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.nome_completo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormLabel>CPF do responsável principal</FormLabel>
+            <FormControl>
+              <Input
+                value={primaryResponsible.cpf}
+                readOnly
+                disabled
+                placeholder="CPF do responsável principal"
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
-        )}
-      />
-
-      <FormItem>
-        <FormLabel>CPF do responsável principal</FormLabel>
-        <FormControl>
-          <Input
-            value={primaryResponsible.cpf}
-            readOnly
-            disabled
-            placeholder="CPF do responsável principal"
-          />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
+        </>
+      )}
 
       <FormField
         control={form.control}
@@ -1164,14 +1197,17 @@ export default function ProjectRegistrationForm() {
     </div>
   );
 
+  const steps = isCompany
+    ? [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6]
+    : [renderStep1, renderStep2, renderStep4, renderStep5, renderStep6];
+
   const renderSteps = () => (
     <>
-      <div className={currentStep === 1 ? '' : 'hidden'}>{renderStep1()}</div>
-      <div className={currentStep === 2 ? '' : 'hidden'}>{renderStep2()}</div>
-      <div className={currentStep === 3 ? '' : 'hidden'}>{renderStep3()}</div>
-      <div className={currentStep === 4 ? '' : 'hidden'}>{renderStep4()}</div>
-      <div className={currentStep === 5 ? '' : 'hidden'}>{renderStep5()}</div>
-      <div className={currentStep === 6 ? '' : 'hidden'}>{renderStep6()}</div>
+      {steps.map((StepComponent, index) => (
+        <div key={index} className={currentStep === index + 1 ? '' : 'hidden'}>
+          {StepComponent()}
+        </div>
+      ))}
     </>
   );
 
@@ -1186,17 +1222,37 @@ export default function ProjectRegistrationForm() {
         </div>
 
         <p className="text-sm text-gray-600 text-center mb-2">
-          {currentStep === 1
-            ? 'Informações iniciais.'
-            : currentStep === 2
-            ? `Canva digital - ${form.getValues('nome')}`
-            : currentStep === 3
-            ? `Dados do proponente - ${form.getValues('nome')}`
-            : currentStep === 4
-            ? `Dados do proponente - ${form.getValues('nome')}`
-            : currentStep === 5
-            ? `Plano de trabalho - ${form.getValues('nome')}`
-            : `Equipe de trabalho - ${form.getValues('nome')}`}
+          {(() => {
+            const name = form.getValues('nome');
+            if (isCompany) {
+              switch (currentStep) {
+                case 1:
+                  return 'Informações iniciais.';
+                case 2:
+                  return `Canva digital - ${name}`;
+                case 3:
+                case 4:
+                  return `Dados do proponente - ${name}`;
+                case 5:
+                  return `Plano de trabalho - ${name}`;
+                default:
+                  return `Equipe de trabalho - ${name}`;
+              }
+            } else {
+              switch (currentStep) {
+                case 1:
+                  return 'Informações iniciais.';
+                case 2:
+                  return `Canva digital - ${name}`;
+                case 3:
+                  return `Dados do proponente - ${name}`;
+                case 4:
+                  return `Plano de trabalho - ${name}`;
+                default:
+                  return `Equipe de trabalho - ${name}`;
+              }
+            }
+          })()}
         </p>
       </div>
 
@@ -1234,7 +1290,7 @@ export default function ProjectRegistrationForm() {
                 Voltar
               </Button>
 
-              {currentStep === 6 ? (
+              {currentStep === totalSteps ? (
                 <Button type="submit" className="bg-blue-500 hover:bg-blue-600">
                   Finalizar
                 </Button>
@@ -1248,13 +1304,13 @@ export default function ProjectRegistrationForm() {
                   {isPending && (
                     <Loader2 className="animate-spin h-4 w-4 mr-2" />
                   )}
-                  {currentStep < 6 ? (
+                  {currentStep < totalSteps ? (
                     <span className="">Avançar</span>
                   ) : (
                     <span className="">Finalizar</span>
                   )}
 
-                  {!isPending && currentStep < 6 ? (
+                  {!isPending && currentStep < totalSteps ? (
                     <ChevronRight className="h-4 w-4" />
                   ) : null}
                 </Button>
