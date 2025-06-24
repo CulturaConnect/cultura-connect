@@ -9,6 +9,7 @@ export function NewProjectButton() {
 
   return (
     <Button
+      id="new-project-button"
       onClick={() => navigate('/project/new')}
       className="fixed bottom-20 left-1/2 transform -translate-x-1/2 rounded-3xl"
       variant="secondary"
