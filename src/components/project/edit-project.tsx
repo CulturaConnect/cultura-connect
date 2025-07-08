@@ -35,6 +35,10 @@ interface ProjectActivity {
   id: string;
   title: string;
   description: string;
+  status: string;
+  budget: string;
+  start: string;
+  end: string;
 }
 
 const statusOptions = [
@@ -76,11 +80,19 @@ export default function EditProjectTab({
       id: (index + 1).toString(),
       title: activity.titulo,
       description: activity.descricao,
+      status: activity.status || 'novo',
+      budget: activity.orcamento_previsto || '0',
+      start: activity.inicio || '',
+      end: activity.fim || '',
     })),
   );
   const [newActivity, setNewActivity] = useState({
     title: '',
     description: '',
+    status: 'novo',
+    budget: '',
+    start: '',
+    end: '',
   });
 
   const { mutateAsync, isPending } = useUpdateProjectMutation();
@@ -91,9 +103,20 @@ export default function EditProjectTab({
         id: Date.now().toString(),
         title: newActivity.title,
         description: newActivity.description,
+        status: newActivity.status,
+        budget: newActivity.budget,
+        start: newActivity.start,
+        end: newActivity.end,
       };
       setActivities([...activities, activity]);
-      setNewActivity({ title: '', description: '' });
+      setNewActivity({
+        title: '',
+        description: '',
+        status: 'novo',
+        budget: '',
+        start: '',
+        end: '',
+      });
     }
   };
 
@@ -115,6 +138,10 @@ export default function EditProjectTab({
       cronograma_atividades: activities.map((activity) => ({
         titulo: activity.title,
         descricao: activity.description,
+        status: activity.status,
+        orcamento_previsto: activity.budget,
+        inicio: activity.start,
+        fim: activity.end,
       })),
       status: projectStatus,
     };
@@ -295,6 +322,12 @@ export default function EditProjectTab({
                     <p className="text-sm text-muted-foreground mt-1">
                       {activity.description}
                     </p>
+                    <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-2">
+                      <span>Status: {activity.status}</span>
+                      <span>Orçamento: {activity.budget}</span>
+                      <span>Início: {activity.start}</span>
+                      <span>Fim: {activity.end}</span>
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
@@ -329,29 +362,93 @@ export default function EditProjectTab({
                     className="mt-2"
                   />
                 </div>
+              <div>
+                <Label htmlFor="activity-description">Descrição</Label>
+                <Textarea
+                  id="activity-description"
+                  value={newActivity.description}
+                  onChange={(e) =>
+                    setNewActivity({
+                      ...newActivity,
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder="Descreva os detalhes da atividade..."
+                  className="mt-2"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="activity-description">Descrição</Label>
-                  <Textarea
-                    id="activity-description"
-                    value={newActivity.description}
-                    onChange={(e) =>
-                      setNewActivity({
-                        ...newActivity,
-                        description: e.target.value,
-                      })
+                  <Label htmlFor="activity-status">Status</Label>
+                  <Select
+                    onValueChange={(v) =>
+                      setNewActivity({ ...newActivity, status: v })
                     }
-                    placeholder="Descreva os detalhes da atividade..."
+                    defaultValue={newActivity.status}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {statusOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="activity-budget">Orçamento Previsto</Label>
+                  <Input
+                    id="activity-budget"
+                    type="number"
+                    value={newActivity.budget}
+                    onChange={(e) =>
+                      setNewActivity({ ...newActivity, budget: e.target.value })
+                    }
                     className="mt-2"
-                    rows={3}
                   />
                 </div>
-                <Button
-                  onClick={addActivity}
-                  className="flex items-center gap-2"
-                  disabled={
-                    !newActivity.title.trim() || !newActivity.description.trim()
-                  }
-                >
+                <div>
+                  <Label htmlFor="activity-start">Início</Label>
+                  <Input
+                    id="activity-start"
+                    type="date"
+                    value={newActivity.start}
+                    onChange={(e) =>
+                      setNewActivity({ ...newActivity, start: e.target.value })
+                    }
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="activity-end">Fim</Label>
+                  <Input
+                    id="activity-end"
+                    type="date"
+                    value={newActivity.end}
+                    onChange={(e) =>
+                      setNewActivity({ ...newActivity, end: e.target.value })
+                    }
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={addActivity}
+                className="flex items-center gap-2"
+                disabled={
+                  !newActivity.title.trim() ||
+                  !newActivity.description.trim() ||
+                  !newActivity.budget.trim() ||
+                  !newActivity.start.trim() ||
+                  !newActivity.end.trim()
+                }
+              >
                   <Plus className="w-4 h-4" />
                   Adicionar Atividade
                 </Button>

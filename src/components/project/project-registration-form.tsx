@@ -81,6 +81,10 @@ const areaExecucaoSchema = z.object({
 const cronogramaSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
   descricao: z.string().min(1, 'Descrição é obrigatória'),
+  status: z.string().min(1, 'Status é obrigatório'),
+  orcamento_previsto: z.string().min(1, 'Orçamento é obrigatório'),
+  inicio: z.string().min(1, 'Data de início é obrigatória'),
+  fim: z.string().min(1, 'Data de fim é obrigatória'),
 });
 
 const equipeSchema = z.object({
@@ -95,6 +99,7 @@ function createBaseSchema(isCompany: boolean) {
     segmento: z.string().min(1, 'Segmento é obrigatório'),
     inicio: z.string().min(1, 'Data de início é obrigatória'),
     fim: z.string().min(1, 'Data de fim é obrigatória'),
+    is_public: z.boolean().default(true),
     imagem: z
       .instanceof(File)
       .refine((file) => file.size <= 10 * 1024 * 1024, 'Arquivo maior que 10MB')
@@ -219,6 +224,7 @@ export default function ProjectRegistrationForm() {
       segmento: '',
       inicio: '',
       fim: '',
+      is_public: true,
       modelo: {
         missao: '',
         visao: '',
@@ -249,6 +255,10 @@ export default function ProjectRegistrationForm() {
         {
           titulo: '',
           descricao: '',
+          status: '',
+          orcamento_previsto: '',
+          inicio: '',
+          fim: '',
         },
       ],
       responsavel_principal_id: '',
@@ -306,6 +316,7 @@ export default function ProjectRegistrationForm() {
               segmento: true,
               inicio: true,
               fim: true,
+              is_public: true,
             }),
             2: baseSchema.pick({ modelo: true }),
             3: baseSchema.pick({ responsavel_legal_id: true }),
@@ -332,6 +343,7 @@ export default function ProjectRegistrationForm() {
               segmento: true,
               inicio: true,
               fim: true,
+              is_public: true,
             }),
             2: baseSchema.pick({ modelo: true }),
             3: baseSchema.pick({
@@ -463,6 +475,29 @@ export default function ProjectRegistrationForm() {
                 <SelectItem value="games">Games</SelectItem>
                 <SelectItem value="pintura">Pintura</SelectItem>
                 <SelectItem value="folclore">Folclore</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="is_public"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Visibilidade</FormLabel>
+            <Select onValueChange={(v) => field.onChange(v === 'public')}
+              defaultValue={field.value ? 'public' : 'private'}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="public">Público</SelectItem>
+                <SelectItem value="private">Privado</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />
@@ -986,6 +1021,72 @@ export default function ProjectRegistrationForm() {
                     )}
                   />
 
+                  <div className="grid grid-cols-2 gap-4 w-full">
+                    <FormField
+                      control={form.control}
+                      name={`cronograma_atividades.${index}.status`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="novo">Novo</SelectItem>
+                              <SelectItem value="andamento">Em Andamento</SelectItem>
+                              <SelectItem value="pendente">Pendente</SelectItem>
+                              <SelectItem value="atrasado">Atrasado</SelectItem>
+                              <SelectItem value="concluido">Concluído</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`cronograma_atividades.${index}.orcamento_previsto`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Orçamento Previsto</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`cronograma_atividades.${index}.inicio`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Início</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`cronograma_atividades.${index}.fim`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fim</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <Button
                     type="button"
                     variant="destructive"
@@ -1001,7 +1102,16 @@ export default function ProjectRegistrationForm() {
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => append({ titulo: '', descricao: '' })}
+                onClick={() =>
+                  append({
+                    titulo: '',
+                    descricao: '',
+                    status: '',
+                    orcamento_previsto: '',
+                    inicio: '',
+                    fim: '',
+                  })
+                }
               >
                 Adicionar atividade
               </Button>
