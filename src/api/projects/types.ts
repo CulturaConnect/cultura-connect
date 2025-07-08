@@ -16,6 +16,7 @@ export interface CreateProject {
   responsavel_legal_id?: string;
   orcamento_previsto?: string;
   orcamento_gasto?: string;
+  is_public?: boolean;
 }
 
 export interface UpdateProject {
@@ -23,6 +24,7 @@ export interface UpdateProject {
   status?: string;
   orcamento_previsto?: string;
   orcamento_gasto?: string;
+  is_public?: boolean;
 }
 
 export interface Modelo {
@@ -48,6 +50,10 @@ export interface AreasExecucao {
 export interface CronogramaAtividade {
   titulo?: string;
   descricao?: string;
+  status?: string;
+  orcamento_previsto?: string;
+  inicio?: string;
+  fim?: string;
 }
 
 export interface Equipe {
@@ -77,5 +83,6 @@ export interface Project {
   status: string;
   orcamento_previsto: number;
   orcamento_gasto: number;
+  is_public: boolean;
   created_at: string;
 }

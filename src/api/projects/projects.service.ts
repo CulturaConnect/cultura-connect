@@ -23,6 +23,7 @@ export async function createProject(data: CreateProject) {
   formData.append('metas', data.metas ?? '');
   formData.append('orcamento_previsto', data.orcamento_previsto ?? '');
   formData.append('orcamento_gasto', data.orcamento_gasto ?? '');
+  formData.append('is_public', String(data.is_public ?? true));
   if (data.responsavel_principal_id) {
     formData.append('responsavel_principal_id', data.responsavel_principal_id);
   }

@@ -3,11 +3,15 @@
 import { useGetProjectsQuery } from '@/api/projects/projects.queries';
 import { ProjectCard } from './project-card';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/auth';
 
-export function ProjectsGrid() {
+interface ProjectsGridProps {
+  filterBy?: 'all' | 'mine';
+}
+export function ProjectsGrid({ filterBy = 'all' }: ProjectsGridProps) {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
-
+  const { user } = useAuth();
   const { data } = useGetProjectsQuery(searchQuery);
 
   function getProjectProgress(project) {
@@ -23,10 +27,15 @@ export function ProjectsGrid() {
     return Math.round(progress);
   }
 
+  const projects =
+    filterBy === 'mine' && user
+      ? data?.filter((p) => p.company_id === user.id)
+      : data;
+
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {data?.map((project) => (
+        {projects?.map((project) => (
           <ProjectCard
             key={project.id}
             id={project.id}
