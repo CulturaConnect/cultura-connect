@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -69,13 +70,14 @@ export default function EditProjectTab({
   setInitialTab: (tab: string) => void;
 }) {
   const [projectStatus, setProjectStatus] = useState(project.status || 'novo');
+  const navigate = useNavigate();
   const [budgetSpent, setBudgetSpent] = useState(
     project.orcamento_gasto.toString() || '0',
   );
   const [budgetPlanned, setBudgetPlanned] = useState(
     project.orcamento_previsto.toString() || '0',
   );
-  const [activities, setActivities] = useState<ProjectActivity[]>(
+  const [activities] = useState<ProjectActivity[]>(
     project.cronograma_atividades.map((activity, index) => ({
       id: (index + 1).toString(),
       title: activity.titulo,
@@ -86,43 +88,10 @@ export default function EditProjectTab({
       end: activity.fim || '',
     })),
   );
-  const [newActivity, setNewActivity] = useState({
-    title: '',
-    description: '',
-    status: 'novo',
-    budget: '',
-    start: '',
-    end: '',
-  });
 
   const { mutateAsync, isPending } = useUpdateProjectMutation();
 
-  const addActivity = () => {
-    if (newActivity.title.trim() && newActivity.description.trim()) {
-      const activity: ProjectActivity = {
-        id: Date.now().toString(),
-        title: newActivity.title,
-        description: newActivity.description,
-        status: newActivity.status,
-        budget: newActivity.budget,
-        start: newActivity.start,
-        end: newActivity.end,
-      };
-      setActivities([...activities, activity]);
-      setNewActivity({
-        title: '',
-        description: '',
-        status: 'novo',
-        budget: '',
-        start: '',
-        end: '',
-      });
-    }
-  };
-
-  const removeActivity = (id: string) => {
-    setActivities(activities.filter((activity) => activity.id !== id));
-  };
+  /* old activity handlers removed as activities are managed in a dedicated page */
 
   const getStatusBadge = (status: string) => {
     const statusOption = statusOptions.find(
@@ -135,14 +104,6 @@ export default function EditProjectTab({
     const data = {
       orcamento_gasto: budgetSpent,
       orcamento_previsto: budgetPlanned,
-      cronograma_atividades: activities.map((activity) => ({
-        titulo: activity.title,
-        descricao: activity.description,
-        status: activity.status,
-        orcamento_previsto: activity.budget,
-        inicio: activity.start,
-        fim: activity.end,
-      })),
       status: projectStatus,
     };
 
@@ -306,157 +267,20 @@ export default function EditProjectTab({
           <CardHeader>
             <CardTitle>Atividades do Projeto</CardTitle>
             <CardDescription>
-              Adicione, edite ou remova atividades do projeto
+              Gerencie as atividades em uma tela dedicada
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Lista de Atividades Existentes */}
-            <div className="space-y-4 mb-6">
-              {activities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start gap-4 p-4 border rounded-lg"
-                >
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{activity.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {activity.description}
-                    </p>
-                    <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-2">
-                      <span>Status: {activity.status}</span>
-                      <span>Orçamento: {activity.budget}</span>
-                      <span>Início: {activity.start}</span>
-                      <span>Fim: {activity.end}</span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeActivity(activity.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-              {activities.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhuma atividade adicionada ainda
-                </div>
-              )}
-            </div>
-
-            {/* Formulário para Nova Atividade */}
-            <div className="border-t pt-6">
-              <h4 className="font-semibold mb-4">Adicionar Nova Atividade</h4>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="activity-title">Título da Atividade</Label>
-                  <Input
-                    id="activity-title"
-                    value={newActivity.title}
-                    onChange={(e) =>
-                      setNewActivity({ ...newActivity, title: e.target.value })
-                    }
-                    placeholder="Ex: Desenvolvimento da API"
-                    className="mt-2"
-                  />
-                </div>
-              <div>
-                <Label htmlFor="activity-description">Descrição</Label>
-                <Textarea
-                  id="activity-description"
-                  value={newActivity.description}
-                  onChange={(e) =>
-                    setNewActivity({
-                      ...newActivity,
-                      description: e.target.value,
-                    })
-                  }
-                  placeholder="Descreva os detalhes da atividade..."
-                  className="mt-2"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="activity-status">Status</Label>
-                  <Select
-                    onValueChange={(v) =>
-                      setNewActivity({ ...newActivity, status: v })
-                    }
-                    defaultValue={newActivity.status}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {statusOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="activity-budget">Orçamento Previsto</Label>
-                  <Input
-                    id="activity-budget"
-                    type="number"
-                    value={newActivity.budget}
-                    onChange={(e) =>
-                      setNewActivity({ ...newActivity, budget: e.target.value })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="activity-start">Início</Label>
-                  <Input
-                    id="activity-start"
-                    type="date"
-                    value={newActivity.start}
-                    onChange={(e) =>
-                      setNewActivity({ ...newActivity, start: e.target.value })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="activity-end">Fim</Label>
-                  <Input
-                    id="activity-end"
-                    type="date"
-                    value={newActivity.end}
-                    onChange={(e) =>
-                      setNewActivity({ ...newActivity, end: e.target.value })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-              <Button
-                onClick={addActivity}
-                className="flex items-center gap-2"
-                disabled={
-                  !newActivity.title.trim() ||
-                  !newActivity.description.trim() ||
-                  !newActivity.budget.trim() ||
-                  !newActivity.start.trim() ||
-                  !newActivity.end.trim()
-                }
-              >
-                  <Plus className="w-4 h-4" />
-                  Adicionar Atividade
-                </Button>
-              </div>
-            </div>
+            <Button
+              onClick={() => navigate(`/project/${project.id}/activities`)}
+              className="mt-2"
+            >
+              Gerenciar Atividades
+            </Button>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+
