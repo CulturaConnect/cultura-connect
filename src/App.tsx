@@ -15,6 +15,7 @@ import { AuthProvider } from './contexts/auth';
 import NewProject from './pages/new-project';
 import ProfileScreen from './pages/profile';
 import ProjectDetails from './pages/project-details';
+import ProjectActivities from './pages/project-activities';
 import PrivateRoute from './components/auth/PrivateRoute';
 
 const queryClient = new QueryClient();
@@ -44,6 +45,10 @@ const App = () => (
               }
             />
             <Route path="/project/:projectId" element={<ProjectDetails />} />
+            <Route
+              path="/project/:projectId/activities"
+              element={<ProjectActivities />}
+            />
 
             <Route
               path="/me"
