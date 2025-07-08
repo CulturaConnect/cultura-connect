@@ -37,7 +37,7 @@ interface ProjectActivity {
   title: string;
   description: string;
   status: string;
-  budget: string;
+  budget: number;
   start: string;
   end: string;
 }
@@ -83,7 +83,7 @@ export default function EditProjectTab({
       title: activity.titulo,
       description: activity.descricao,
       status: activity.status || 'novo',
-      budget: activity.orcamento_previsto || '0',
+      budget: activity.orcamento_previsto || 0,
       start: activity.inicio || '',
       end: activity.fim || '',
     })),
@@ -102,8 +102,8 @@ export default function EditProjectTab({
 
   const handleSave = async () => {
     const data = {
-      orcamento_gasto: budgetSpent,
-      orcamento_previsto: budgetPlanned,
+      orcamento_gasto: Number(budgetSpent),
+      orcamento_previsto: Number(budgetPlanned),
       status: projectStatus,
     };
 
@@ -283,4 +283,3 @@ export default function EditProjectTab({
     </div>
   );
 }
-

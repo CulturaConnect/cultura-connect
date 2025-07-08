@@ -7,6 +7,7 @@ import {
 } from './projects.service';
 import { toast } from 'sonner';
 import { CreateProject, Project } from './types';
+import { useNavigate } from 'react-router-dom';
 
 export function useCreateProjectMutation() {
   const queryClient = useQueryClient();
@@ -55,12 +56,17 @@ export function useGetProjectByIdQuery(projectId: string) {
 export function useUpdateProjectMutation() {
   const queryClient = useQueryClient();
 
+  const navigate = useNavigate();
+
   return useMutation({
     mutationFn: (data: { projectId: string; projectData: CreateProject }) =>
       updateProject(data.projectId, data.projectData),
     onSuccess: (data: Project) => {
       queryClient.invalidateQueries({ queryKey: ['project-by-id', data.id] });
       toast.success('Projeto atualizado com sucesso!');
+
+      navigate(`/project/${data.id}`);
+
       return true;
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

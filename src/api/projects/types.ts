@@ -14,16 +14,16 @@ export interface CreateProject {
   responsavel_principal_id?: string;
   equipe?: Equipe[];
   responsavel_legal_id?: string;
-  orcamento_previsto?: string;
-  orcamento_gasto?: string;
+  orcamento_previsto?: number;
+  orcamento_gasto?: number;
   is_public?: boolean;
 }
 
 export interface UpdateProject {
   cronograma_atividades?: CronogramaAtividade[];
   status?: string;
-  orcamento_previsto?: string;
-  orcamento_gasto?: string;
+  orcamento_previsto?: number;
+  orcamento_gasto?: number;
   is_public?: boolean;
 }
 
@@ -51,7 +51,7 @@ export interface CronogramaAtividade {
   titulo?: string;
   descricao?: string;
   status?: string;
-  orcamento_previsto?: string;
+  orcamento_previsto?: number;
   inicio?: string;
   fim?: string;
 }

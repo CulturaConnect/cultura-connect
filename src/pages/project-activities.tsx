@@ -1,13 +1,12 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
   DialogContent,
@@ -30,31 +29,82 @@ import {
   useGetProjectByIdQuery,
   useUpdateProjectMutation,
 } from '@/api/projects/projects.queries';
-import { Project } from '@/api/projects/types';
-import { Plus, Trash2, Pencil, ArrowLeft, Save } from 'lucide-react';
+import type { Project } from '@/api/projects/types';
+import {
+  Plus,
+  Trash2,
+  Pencil,
+  ArrowLeft,
+  Save,
+  Calendar,
+  DollarSign,
+  Activity,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  TrendingUp,
+  Target,
+  Loader2,
+} from 'lucide-react';
 
 interface ProjectActivity {
   id: string;
   title: string;
   description: string;
   status: string;
-  budget: string;
+  budget: number;
   start: string;
   end: string;
 }
 
 const statusOptions = [
-  { value: 'novo', label: 'Novo' },
-  { value: 'andamento', label: 'Em Andamento' },
-  { value: 'pendente', label: 'Pendente' },
-  { value: 'atrasado', label: 'Atrasado' },
-  { value: 'concluido', label: 'Concluído' },
+  {
+    value: 'novo',
+    label: 'Novo',
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
+  },
+  {
+    value: 'andamento',
+    label: 'Em Andamento',
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  },
+  {
+    value: 'pendente',
+    label: 'Pendente',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+  },
+  {
+    value: 'atrasado',
+    label: 'Atrasado',
+    color: 'bg-red-100 text-red-800 border-red-200',
+  },
+  {
+    value: 'concluido',
+    label: 'Concluído',
+    color: 'bg-green-100 text-green-800 border-green-200',
+  },
 ];
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'novo':
+      return <Target className="w-4 h-4" />;
+    case 'andamento':
+      return <Clock className="w-4 h-4" />;
+    case 'pendente':
+      return <AlertCircle className="w-4 h-4" />;
+    case 'atrasado':
+      return <AlertCircle className="w-4 h-4" />;
+    case 'concluido':
+      return <CheckCircle2 className="w-4 h-4" />;
+    default:
+      return <Activity className="w-4 h-4" />;
+  }
+};
 
 export default function ProjectActivities() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-
   const { data, isLoading } = useGetProjectByIdQuery(projectId);
   const { mutateAsync, isPending } = useUpdateProjectMutation();
 
@@ -68,7 +118,7 @@ export default function ProjectActivities() {
     title: '',
     description: '',
     status: 'novo',
-    budget: '',
+    budget: 0,
     start: '',
     end: '',
   });
@@ -81,7 +131,7 @@ export default function ProjectActivities() {
           title: a.titulo || '',
           description: a.descricao || '',
           status: a.status || 'novo',
-          budget: a.orcamento_previsto || '0',
+          budget: a.orcamento_previsto || 0,
           start: a.inicio || '',
           end: a.fim || '',
         })),
@@ -91,18 +141,28 @@ export default function ProjectActivities() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">Carregando...</div>
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Carregando atividades...</p>
+        </div>
+      </div>
     );
   }
 
   const totalActivities = activities.length;
   const inProgress = activities.filter((a) => a.status === 'andamento').length;
   const concluded = activities.filter((a) => a.status === 'concluido').length;
+  const delayed = activities.filter((a) => a.status === 'atrasado').length;
   const totalBudget = (data as Project).orcamento_previsto;
   const totalSpent = activities.reduce(
-    (acc, a) => acc + parseFloat(a.budget || '0'),
+    (acc, a) => acc + Number(a.budget || 0),
     0,
   );
+  const progressPercentage =
+    totalActivities > 0 ? (concluded / totalActivities) * 100 : 0;
+  const budgetUsagePercentage =
+    totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   const filteredActivities = activities.filter((a) => {
     const matchesSearch = a.title.toLowerCase().includes(search.toLowerCase());
@@ -117,7 +177,7 @@ export default function ProjectActivities() {
       title: '',
       description: '',
       status: 'novo',
-      budget: '',
+      budget: 0,
       start: '',
       end: '',
     });
@@ -159,215 +219,546 @@ export default function ProjectActivities() {
         fim: a.end,
       })),
     } as Project;
-
     await mutateAsync({ projectId: data?.id || '', projectData: payload });
   };
 
   return (
-    <div className="min-h-screen flex flex-col pb-4">
-      <div className="w-full flex items-center justify-between p-4 border-b bg-white">
-        <ArrowLeft
-          className="size-5 text-gray-500 cursor-pointer mr-2"
-          onClick={() => navigate(-1)}
-        />
-        <h1 className="text-lg font-medium flex-1 text-center">Gerenciar Atividades</h1>
-        <Button onClick={handleSave} disabled={isPending} size="sm" className="ml-auto">
-          {isPending ? <Save className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          <span className="sr-only">Salvar</span>
-        </Button>
-      </div>
-      <div className="p-4 space-y-6 flex-1 overflow-y-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold">{totalActivities}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Em andamento</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold">{inProgress}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Concluídas</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold">{concluded}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Orçamento Total</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold">
-              R$ {totalBudget.toLocaleString('pt-BR')}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Gasto</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold">
-              R$ {totalSpent.toLocaleString('pt-BR')}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-          <div className="flex-1">
-            <Label htmlFor="search">Buscar</Label>
-            <Input
-              id="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar atividade..."
-              className="mt-2"
-            />
-          </div>
-          <div className="w-full sm:w-40">
-            <Label htmlFor="filter">Status</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger id="filter" className="mt-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {statusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openNewDialog} className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" /> Nova Atividade
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Header */}
+      <div className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+        <div className="p-4 sm:p-6">
+          {/* Mobile Layout */}
+          <div className="flex flex-col space-y-4 sm:hidden">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(-1)}
+                className="hover:bg-slate-100 -ml-2"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                <span className="text-sm">Voltar</span>
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingIndex !== null ? 'Editar Atividade' : 'Nova Atividade'}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Título</Label>
-                  <Input
-                    id="title"
-                    value={activityForm.title}
-                    onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    rows={3}
-                    value={activityForm.description}
-                    onChange={(e) =>
-                      setActivityForm({ ...activityForm, description: e.target.value })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={activityForm.status}
-                      onValueChange={(v) => setActivityForm({ ...activityForm, status: v })}
-                    >
-                      <SelectTrigger id="status" className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="budget">Orçamento</Label>
-                    <Input
-                      id="budget"
-                      type="number"
-                      value={activityForm.budget}
-                      onChange={(e) => setActivityForm({ ...activityForm, budget: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="start">Início</Label>
-                    <Input
-                      id="start"
-                      type="date"
-                      value={activityForm.start}
-                      onChange={(e) => setActivityForm({ ...activityForm, start: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="end">Fim</Label>
-                    <Input
-                      id="end"
-                      type="date"
-                      value={activityForm.end}
-                      onChange={(e) => setActivityForm({ ...activityForm, end: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
+              <Button
+                onClick={handleSave}
+                disabled={isPending}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg px-3"
+              >
+                {isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                <span className="ml-2 hidden xs:inline">Salvar</span>
+              </Button>
+            </div>
+            <div className="text-center px-2">
+              <h1 className="text-xl font-bold text-slate-900 leading-tight">
+                Gerenciar Atividades
+              </h1>
+              <p className="text-slate-600 text-sm mt-1">
+                Organize e acompanhe o progresso
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden sm:flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(-1)}
+                className="hover:bg-slate-100 hover:text-slate-900"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">
+                  Gerenciar Atividades
+                </h1>
+                <p className="text-slate-600 text-sm">
+                  Organize e acompanhe o progresso do projeto
+                </p>
               </div>
-              <DialogFooter className="pt-4">
-                <DialogClose asChild>
-                  <Button variant="outline">Cancelar</Button>
-                </DialogClose>
-                <Button onClick={handleDialogSave}>Salvar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </div>
+            <Button
+              onClick={handleSave}
+              disabled={isPending}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+            >
+              {isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Salvar Alterações
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm font-medium">
+                    Total de Atividades
+                  </p>
+                  <p className="text-3xl font-bold mt-1">{totalActivities}</p>
+                </div>
+                <Activity className="w-8 h-8 text-blue-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white border-0 shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-yellow-100 text-sm font-medium">
+                    Em Andamento
+                  </p>
+                  <p className="text-3xl font-bold mt-1">{inProgress}</p>
+                </div>
+                <Clock className="w-8 h-8 text-yellow-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm font-medium">
+                    Concluídas
+                  </p>
+                  <p className="text-3xl font-bold mt-1">{concluded}</p>
+                </div>
+                <CheckCircle2 className="w-8 h-8 text-green-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm font-medium">
+                    Progresso
+                  </p>
+                  <p className="text-3xl font-bold mt-1">
+                    {Math.round(progressPercentage)}%
+                  </p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-purple-200" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="space-y-4">
-          {filteredActivities.map((activity, index) => (
-            <Card key={activity.id} className="p-4 flex justify-between">
-              <div>
-                <h4 className="font-semibold">{activity.title}</h4>
-                <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
-                <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-2">
-                  <span>Status: {activity.status}</span>
-                  <span>Orçamento: {activity.budget}</span>
-                  <span>Início: {activity.start}</span>
-                  <span>Fim: {activity.end}</span>
+        {/* Budget Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <DollarSign className="w-5 h-5 text-green-600" />
+                Visão Geral do Orçamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600">Orçamento Total</span>
+                <span className="font-bold text-lg text-slate-900">
+                  R$ {totalBudget.toLocaleString('pt-BR')}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600">Total Gasto</span>
+                <span className="font-bold text-lg text-slate-900">
+                  R$ {totalSpent.toLocaleString('pt-BR')}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">
+                    Utilização do Orçamento
+                  </span>
+                  <span className="font-medium">
+                    {Math.round(budgetUsagePercentage)}%
+                  </span>
+                </div>
+                <Progress value={budgetUsagePercentage} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <Target className="w-5 h-5 text-blue-600" />
+                Progresso do Projeto
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-2xl font-bold text-slate-900">
+                    {concluded}
+                  </p>
+                  <p className="text-sm text-slate-600">Concluídas</p>
+                </div>
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-2xl font-bold text-slate-900">
+                    {totalActivities - concluded}
+                  </p>
+                  <p className="text-sm text-slate-600">Restantes</p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button size="icon" variant="outline" onClick={() => openEditDialog(index)}>
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => removeActivity(index)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Progresso Geral</span>
+                  <span className="font-medium">
+                    {Math.round(progressPercentage)}%
+                  </span>
+                </div>
+                <Progress value={progressPercentage} className="h-2" />
               </div>
-            </Card>
-          ))}
-          {filteredActivities.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              Nenhuma atividade encontrada
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Controls */}
+        <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4 items-end">
+              <div className="w-full">
+                <Label htmlFor="search" className="text-slate-700 font-medium">
+                  Buscar Atividades
+                </Label>
+                <Input
+                  id="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Digite o nome da atividade..."
+                  className="mt-2 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="w-full lg:w-48">
+                <Label htmlFor="filter" className="text-slate-700 font-medium">
+                  Filtrar por Status
+                </Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger
+                    id="filter"
+                    className="mt-2 border-slate-200 focus:border-blue-500"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Status</SelectItem>
+                    {statusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={openNewDialog}
+                    className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Atividade
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-slate-900">
+                      {editingIndex !== null
+                        ? 'Editar Atividade'
+                        : 'Nova Atividade'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-6">
+                    <div>
+                      <Label
+                        htmlFor="title"
+                        className="text-slate-700 font-medium"
+                      >
+                        Título da Atividade
+                      </Label>
+                      <Input
+                        id="title"
+                        value={activityForm.title}
+                        onChange={(e) =>
+                          setActivityForm({
+                            ...activityForm,
+                            title: e.target.value,
+                          })
+                        }
+                        className="mt-2 border-slate-200 focus:border-blue-500"
+                        placeholder="Digite o título da atividade"
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="description"
+                        className="text-slate-700 font-medium"
+                      >
+                        Descrição
+                      </Label>
+                      <Textarea
+                        id="description"
+                        rows={3}
+                        value={activityForm.description}
+                        onChange={(e) =>
+                          setActivityForm({
+                            ...activityForm,
+                            description: e.target.value,
+                          })
+                        }
+                        className="mt-2 border-slate-200 focus:border-blue-500"
+                        placeholder="Descreva os detalhes da atividade"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label
+                          htmlFor="status"
+                          className="text-slate-700 font-medium"
+                        >
+                          Status
+                        </Label>
+                        <Select
+                          value={activityForm.status}
+                          onValueChange={(v) =>
+                            setActivityForm({ ...activityForm, status: v })
+                          }
+                        >
+                          <SelectTrigger
+                            id="status"
+                            className="mt-2 border-slate-200"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="budget"
+                          className="text-slate-700 font-medium"
+                        >
+                          Orçamento (R$)
+                        </Label>
+                        <Input
+                          id="budget"
+                          type="number"
+                          value={activityForm.budget}
+                          onChange={(e) =>
+                            setActivityForm({
+                              ...activityForm,
+                              budget: Number(e.target.value),
+                            })
+                          }
+                          className="mt-2 border-slate-200 focus:border-blue-500"
+                          placeholder="0,00"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="start"
+                          className="text-slate-700 font-medium"
+                        >
+                          Data de Início
+                        </Label>
+                        <Input
+                          id="start"
+                          type="date"
+                          value={activityForm.start}
+                          onChange={(e) =>
+                            setActivityForm({
+                              ...activityForm,
+                              start: e.target.value,
+                            })
+                          }
+                          className="mt-2 border-slate-200 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="end"
+                          className="text-slate-700 font-medium"
+                        >
+                          Data de Término
+                        </Label>
+                        <Input
+                          id="end"
+                          type="date"
+                          value={activityForm.end}
+                          onChange={(e) =>
+                            setActivityForm({
+                              ...activityForm,
+                              end: e.target.value,
+                            })
+                          }
+                          className="mt-2 border-slate-200 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter className="pt-6">
+                    <DialogClose asChild>
+                      <Button
+                        variant="outline"
+                        className="border-slate-200 bg-transparent"
+                      >
+                        Cancelar
+                      </Button>
+                    </DialogClose>
+                    <Button
+                      onClick={handleDialogSave}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Salvar Atividade
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Activities List */}
+        <div className="space-y-4">
+          {filteredActivities.map((activity, index) => {
+            const statusOption = statusOptions.find(
+              (opt) => opt.value === activity.status,
+            );
+            const statusIcon = getStatusIcon(activity.status);
+
+            return (
+              <Card
+                key={activity.id}
+                className="shadow-lg border-0 bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-200 hover:scale-[1.01]"
+              >
+                <CardContent className="p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-xl font-bold text-slate-900 mb-2">
+                            {activity.title}
+                          </h3>
+                          <p className="text-slate-600 leading-relaxed">
+                            {activity.description}
+                          </p>
+                        </div>
+                        <Badge
+                          className={`${statusOption?.color} border flex items-center gap-1 px-3 py-1`}
+                        >
+                          {statusIcon}
+                          {statusOption?.label}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-100">
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <DollarSign className="w-4 h-4 text-green-600" />
+                          <span className="text-sm">Orçamento:</span>
+                          <span className="font-semibold text-slate-900">
+                            R$ {Number(activity.budget).toLocaleString('pt-BR')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Calendar className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm">Início:</span>
+                          <span className="font-semibold text-slate-900">
+                            {activity.start
+                              ? new Date(activity.start).toLocaleDateString(
+                                  'pt-BR',
+                                )
+                              : 'Não definido'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Calendar className="w-4 h-4 text-red-600" />
+                          <span className="text-sm">Término:</span>
+                          <span className="font-semibold text-slate-900">
+                            {activity.end
+                              ? new Date(activity.end).toLocaleDateString(
+                                  'pt-BR',
+                                )
+                              : 'Não definido'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 lg:flex-col">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditDialog(index)}
+                        className="border-slate-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+                      >
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => removeActivity(index)}
+                        className="border-red-200 hover:bg-red-50 hover:border-red-300 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          {filteredActivities.length === 0 && (
+            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-12 text-center">
+                <Activity className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                  Nenhuma atividade encontrada
+                </h3>
+                <p className="text-slate-600 mb-6">
+                  {search || statusFilter !== 'all'
+                    ? 'Tente ajustar os filtros de busca para encontrar atividades.'
+                    : 'Comece criando sua primeira atividade para este projeto.'}
+                </p>
+                {!search && statusFilter === 'all' && (
+                  <Button
+                    onClick={openNewDialog}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Primeira Atividade
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
