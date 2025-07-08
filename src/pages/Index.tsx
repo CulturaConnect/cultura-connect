@@ -4,18 +4,19 @@ import { NewProjectButton } from '@/components/project/new-project-button';
 import { ProjectsGrid } from '@/components/project/projects-grid';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
-import NewUserTour from '@/components/tour/NewUserTour';
 
 const Index = () => {
   const [tab, setTab] = useState<'all' | 'mine'>('all');
 
   return (
     <div className="min-h-screen pb-20">
-      <NewUserTour />
       <Header />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as 'all' | 'mine')}
-        className="px-4">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as 'all' | 'mine')}
+        className="px-4"
+      >
         <TabsList>
           <TabsTrigger value="mine">Meus projetos</TabsTrigger>
           <TabsTrigger value="all">Todos</TabsTrigger>
