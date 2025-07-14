@@ -57,6 +57,7 @@ import { useGetCompanyUsers } from '@/api/companies/companies.queries';
 import { useAuth } from '@/contexts/auth';
 import { useCreateProjectMutation } from '@/api/projects/projects.queries';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/components/ui/sonner';
 
 const modeloSchema = z.object({
   missao: z.string().min(1, 'Campo obrigatório'),
@@ -371,10 +372,15 @@ export default function ProjectRegistrationForm() {
   const { mutateAsync, isPending } = useCreateProjectMutation();
 
   const onSubmit = async (values: FormData) => {
-    const res = await mutateAsync(values);
+    try {
+      const res = await mutateAsync(values);
 
-    if (res) {
-      navigate('/', { replace: true });
+      if (res) {
+        navigate('/', { replace: true });
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Erro ao criar projeto.');
     }
   };
 

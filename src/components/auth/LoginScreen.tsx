@@ -6,6 +6,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import Logo from './Logo';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth';
+import { toast } from '@/components/ui/sonner';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -19,10 +20,15 @@ const LoginScreen = () => {
     e.preventDefault();
     setLoading(true);
 
-    await Login({ email, senha: password });
-
-    setLoading(false);
-    navigate('/');
+    try {
+      await Login({ email, senha: password });
+      navigate('/');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Erro ao fazer login.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
