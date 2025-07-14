@@ -18,6 +18,8 @@ import { useState } from 'react';
 import Logo from './Logo';
 import { useNavigate } from 'react-router-dom';
 import { registerPerson } from '@/services/auth';
+import { toast } from '@/components/ui/sonner';
+import { validateCPF } from '@/utils/validation';
 
 const schema = z
   .object({
@@ -57,6 +59,13 @@ export default function RegisterPersonScreen() {
     setLoading(true);
 
     const { password, confirmPassword, ...rest } = values;
+
+    const isValid = await validateCPF(rest.cpf);
+    if (!isValid) {
+      toast.error('CPF inválido ou não encontrado.');
+      setLoading(false);
+      return;
+    }
 
     const formattedValues = {
       ...rest,

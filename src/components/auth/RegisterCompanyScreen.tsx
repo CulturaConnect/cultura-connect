@@ -18,6 +18,9 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import Logo from './Logo';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/components/ui/sonner';
+import { validateCNPJ } from '@/utils/validation';
+import { registerCompany } from '@/services/auth';
 
 const step1Schema = z
   .object({
@@ -72,6 +75,12 @@ export default function RegisterCompanyScreen() {
 
   const handleSubmitStep1 = async (data: Step1Data) => {
     setLoading(true);
+    const valid = await validateCNPJ(data.cnpj);
+    if (!valid) {
+      toast.error('CNPJ inválido ou não encontrado.');
+      setLoading(false);
+      return;
+    }
     await new Promise((res) => setTimeout(res, 1000));
     setStep(2);
     setLoading(false);
@@ -79,8 +88,21 @@ export default function RegisterCompanyScreen() {
 
   const handleSubmitStep2 = async (data: Step2Data) => {
     setLoading(true);
-    await new Promise((res) => setTimeout(res, 1000));
-    setLoading(false);
+    const step1 = formStep1.getValues();
+    const payload = {
+      ...data,
+      ...step1,
+      senha: step1.password,
+    };
+    try {
+      await registerCompany(payload);
+      navigate('/auth/success');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Erro ao cadastrar.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
