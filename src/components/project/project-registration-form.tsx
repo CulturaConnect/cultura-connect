@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { z, ZodSchema } from 'zod';
 import {
   ChevronLeft,
   ChevronRight,
@@ -79,17 +79,19 @@ const areaExecucaoSchema = z.object({
   cidade: z.string().min(1, 'Cidade é obrigatória'),
 });
 
-const cronogramaSchema = z.object({
-  titulo: z.string().min(1, 'Título é obrigatório'),
-  descricao: z.string().min(1, 'Descrição é obrigatória'),
-  status: z.string().min(1, 'Status é obrigatório'),
-  orcamento_previsto: z.string().min(1, 'Orçamento é obrigatório'),
-  inicio: z.string().min(1, 'Data de início é obrigatória'),
-  fim: z.string().min(1, 'Data de fim é obrigatória'),
-}).refine((data) => new Date(data.fim) > new Date(data.inicio), {
-  message: 'Data de término deve ser após a de início',
-  path: ['fim'],
-});
+const cronogramaSchema = z
+  .object({
+    titulo: z.string().min(1, 'Título é obrigatório'),
+    descricao: z.string().min(1, 'Descrição é obrigatória'),
+    status: z.string().min(1, 'Status é obrigatório'),
+    orcamento_previsto: z.string().min(1, 'Orçamento é obrigatório'),
+    inicio: z.string().min(1, 'Data de início é obrigatória'),
+    fim: z.string().min(1, 'Data de fim é obrigatória'),
+  })
+  .refine((data) => new Date(data.fim) > new Date(data.inicio), {
+    message: 'Data de término deve ser após a de início',
+    path: ['fim'],
+  });
 
 const equipeSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
@@ -98,51 +100,8 @@ const equipeSchema = z.object({
 });
 
 function createBaseSchema(isCompany: boolean) {
-  return z
-    .object({
-      nome: z.string().min(2, 'Nome do projeto é obrigatório'),
-      segmento: z.string().min(1, 'Segmento é obrigatório'),
-      inicio: z.string().min(1, 'Data de início é obrigatória'),
-      fim: z.string().min(1, 'Data de fim é obrigatória'),
-      is_public: z.boolean().default(true),
-    imagem: z
-      .instanceof(File)
-      .refine((file) => file.size <= 10 * 1024 * 1024, 'Arquivo maior que 10MB')
-      .refine(
-        (file) =>
-          ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'].includes(
-            file.type,
-          ),
-        'Formato inválido',
-      ),
-    modelo: modeloSchema,
-    titulo_oficial: z.string().min(2, 'Título oficial é obrigatório'),
-    areas_execucao: z
-      .array(areaExecucaoSchema)
-      .min(1, 'Pelo menos uma área de execução é obrigatória'),
-    resumo: z.string().min(10, 'Resumo é obrigatório'),
-    objetivos_gerais: z.string().min(10, 'Objetivos gerais são obrigatórios'),
-    metas: z.string().min(10, 'Metas são obrigatórias'),
-    cronograma_atividades: z
-      .array(cronogramaSchema)
-      .min(1, 'Cronograma é obrigatório'),
-    orcamento_previsto: z.string().min(1, 'Orçamento previsto é obrigatório'),
-    orcamento_gasto: z.string().optional(),
-    responsavel_principal_id: isCompany
-      ? z.string().min(1, 'Responsável principal é obrigatório')
-      : z.string().optional(),
-    equipe: z.array(equipeSchema).optional(),
-      responsavel_legal_id: isCompany
-        ? z.string().min(1, 'Responsável legal é obrigatório')
-        : z.string().optional(),
-    })
-    .refine((data) => new Date(data.fim) > new Date(data.inicio), {
-      message: 'Data de término deve ser após a de início',
-      path: ['fim'],
-    });
+  return;
 }
-
-type FormData = z.infer<ReturnType<typeof createBaseSchema>>;
 
 const modelCards = [
   {
@@ -213,7 +172,53 @@ const modelCards = [
 export default function ProjectRegistrationForm() {
   const { user } = useAuth();
   const isCompany = user?.tipo === 'company';
-  const baseSchema = useMemo(() => createBaseSchema(isCompany), [isCompany]);
+  const rawSchema = z.object({
+    nome: z.string().min(2, 'Nome do projeto é obrigatório'),
+    segmento: z.string().min(1, 'Segmento é obrigatório'),
+    inicio: z.string().min(1, 'Data de início é obrigatória'),
+    fim: z.string().min(1, 'Data de fim é obrigatória'),
+    is_public: z.boolean().default(true),
+    imagem: z
+      .instanceof(File)
+      .refine((file) => file.size <= 10 * 1024 * 1024, 'Arquivo maior que 10MB')
+      .refine(
+        (file) =>
+          ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'].includes(
+            file.type,
+          ),
+        'Formato inválido',
+      ),
+    modelo: modeloSchema,
+    titulo_oficial: z.string().min(2, 'Título oficial é obrigatório'),
+    areas_execucao: z
+      .array(areaExecucaoSchema)
+      .min(1, 'Pelo menos uma área de execução é obrigatória'),
+    resumo: z.string().min(10, 'Resumo é obrigatório'),
+    objetivos_gerais: z.string().min(10, 'Objetivos gerais são obrigatórios'),
+    metas: z.string().min(10, 'Metas são obrigatórias'),
+    cronograma_atividades: z
+      .array(cronogramaSchema)
+      .min(1, 'Cronograma é obrigatório'),
+    orcamento_previsto: z.string().min(1, 'Orçamento previsto é obrigatório'),
+    orcamento_gasto: z.string().optional(),
+    responsavel_principal_id: z
+      .string()
+      .min(1, 'Responsável principal é obrigatório'),
+    equipe: z.array(equipeSchema).optional(),
+    responsavel_legal_id: z.string().min(1, 'Responsável legal é obrigatório'),
+  });
+
+  // Adiciona as validações de negócio
+  const baseSchema = rawSchema.refine(
+    (data) => new Date(data.fim) > new Date(data.inicio),
+    {
+      message: 'Data de término deve ser após a de início',
+      path: ['fim'],
+    },
+  );
+
+  type FormData = z.infer<typeof baseSchema>;
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isStepValid, setIsStepValid] = useState(false);
   const [legalResponsible, setLegalResponsible] = useState({
@@ -313,9 +318,13 @@ export default function ProjectRegistrationForm() {
       if (!res.ok) return;
       const data = await res.json();
       if (data.erro) return;
-      form.setValue(`areas_execucao.${index}.logradouro`, data.logradouro || '', {
-        shouldValidate: true,
-      });
+      form.setValue(
+        `areas_execucao.${index}.logradouro`,
+        data.logradouro || '',
+        {
+          shouldValidate: true,
+        },
+      );
       form.setValue(`areas_execucao.${index}.bairro`, data.bairro || '', {
         shouldValidate: true,
       });
@@ -331,7 +340,7 @@ export default function ProjectRegistrationForm() {
         { shouldValidate: true },
       );
     } catch {
-      // ignore
+      toast.error('Erro ao buscar CEP. Verifique o número e tente novamente.');
     }
   }
 
@@ -344,62 +353,58 @@ export default function ProjectRegistrationForm() {
     name: 'equipe',
   });
 
+  const stepSchema: Record<number, ZodSchema> = isCompany
+    ? {
+        1: rawSchema.pick({
+          nome: true,
+          segmento: true,
+          inicio: true,
+          fim: true,
+        }),
+        2: rawSchema.pick({ modelo: true }),
+        3: rawSchema.pick({ responsavel_legal_id: true }),
+        4: rawSchema.pick({
+          titulo_oficial: true,
+          areas_execucao: true,
+          resumo: true,
+        }),
+        5: rawSchema.pick({
+          objetivos_gerais: true,
+          metas: true,
+          cronograma_atividades: true,
+          orcamento_previsto: true,
+          orcamento_gasto: true,
+        }),
+        6: rawSchema.pick({ responsavel_principal_id: true, equipe: true }),
+      }
+    : {
+        1: rawSchema.pick({
+          nome: true,
+          segmento: true,
+          inicio: true,
+          fim: true,
+          is_public: true,
+        }),
+        2: rawSchema.pick({ modelo: true }),
+        3: rawSchema.pick({
+          titulo_oficial: true,
+          areas_execucao: true,
+          resumo: true,
+        }),
+        4: rawSchema.pick({
+          objetivos_gerais: true,
+          metas: true,
+          cronograma_atividades: true,
+          orcamento_previsto: true,
+          orcamento_gasto: true,
+        }),
+        5: rawSchema.pick({ equipe: true }),
+      };
+
   const validateStep = async () => {
     const values = form.getValues();
 
     try {
-      const stepSchema = isCompany
-        ? {
-            1: baseSchema.pick({
-              nome: true,
-              segmento: true,
-              inicio: true,
-              fim: true,
-              is_public: true,
-            }),
-            2: baseSchema.pick({ modelo: true }),
-            3: baseSchema.pick({ responsavel_legal_id: true }),
-            4: baseSchema.pick({
-              titulo_oficial: true,
-              areas_execucao: true,
-              resumo: true,
-            }),
-            5: baseSchema.pick({
-              objetivos_gerais: true,
-              metas: true,
-              cronograma_atividades: true,
-              orcamento_previsto: true,
-              orcamento_gasto: true,
-            }),
-            6: baseSchema.pick({
-              responsavel_principal_id: true,
-              equipe: true,
-            }),
-          }
-        : {
-            1: baseSchema.pick({
-              nome: true,
-              segmento: true,
-              inicio: true,
-              fim: true,
-              is_public: true,
-            }),
-            2: baseSchema.pick({ modelo: true }),
-            3: baseSchema.pick({
-              titulo_oficial: true,
-              areas_execucao: true,
-              resumo: true,
-            }),
-            4: baseSchema.pick({
-              objetivos_gerais: true,
-              metas: true,
-              cronograma_atividades: true,
-              orcamento_previsto: true,
-              orcamento_gasto: true,
-            }),
-            5: baseSchema.pick({ equipe: true }),
-          };
-
       await stepSchema[currentStep].parseAsync(values);
       setIsStepValid(true);
     } catch {
@@ -414,6 +419,14 @@ export default function ProjectRegistrationForm() {
       const res = await mutateAsync({
         ...values,
         company_id: user?.id,
+        cronograma_atividades: values.cronograma_atividades.map((item) => ({
+          ...item,
+          orcamento_previsto: Number(item.orcamento_previsto) || 0,
+        })),
+        orcamento_previsto: Number(values.orcamento_previsto) || 0,
+        orcamento_gasto: values.orcamento_gasto
+          ? Number(values.orcamento_gasto)
+          : undefined,
       });
 
       if (res) {
@@ -535,8 +548,10 @@ export default function ProjectRegistrationForm() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Visibilidade</FormLabel>
-            <Select onValueChange={(v) => field.onChange(v === 'public')}
-              defaultValue={field.value ? 'public' : 'private'}>
+            <Select
+              onValueChange={(v) => field.onChange(v === 'public')}
+              defaultValue={field.value ? 'public' : 'private'}
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
@@ -1082,7 +1097,10 @@ export default function ProjectRegistrationForm() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Status</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Selecione" />
@@ -1090,10 +1108,14 @@ export default function ProjectRegistrationForm() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="novo">Novo</SelectItem>
-                              <SelectItem value="andamento">Em Andamento</SelectItem>
+                              <SelectItem value="andamento">
+                                Em Andamento
+                              </SelectItem>
                               <SelectItem value="pendente">Pendente</SelectItem>
                               <SelectItem value="atrasado">Atrasado</SelectItem>
-                              <SelectItem value="concluido">Concluído</SelectItem>
+                              <SelectItem value="concluido">
+                                Concluído
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

@@ -24,6 +24,7 @@ import {
   useForgotPasswordMutation,
   useResetPasswordMutation,
 } from '@/api/auth/auth.queries';
+import { toast } from 'sonner';
 
 const emailSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -82,12 +83,21 @@ export default function ForgotPasswordScreen() {
   });
 
   const sendEmail = async (data: EmailData) => {
-    setLoading(true);
-    const res = await forgotPasswordSendMutation(data.email);
-    if (res) {
-      setStep(2);
+    try {
+      setLoading(true);
+
+      const res = await forgotPasswordSendMutation(data.email);
+      if (res) {
+        setStep(2);
+      }
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      toast.error(
+        'Erro ao enviar o e-mail. Verifique se o e-mail está correto e tente novamente.',
+      );
+      emailForm.reset();
     }
-    setLoading(false);
   };
 
   const validateCode = async (data: CodeData) => {

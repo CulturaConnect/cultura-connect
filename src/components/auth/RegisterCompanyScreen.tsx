@@ -76,11 +76,12 @@ export default function RegisterCompanyScreen() {
   const handleSubmitStep1 = async (data: Step1Data) => {
     setLoading(true);
     const valid = await validateCNPJ(data.cnpj);
-    if (!valid) {
+    if (!valid.cnpj_raiz) {
       toast.error('CNPJ inválido ou não encontrado.');
       setLoading(false);
       return;
     }
+    formStep2.setValue('razaoSocial', valid?.razao_social || '');
     await new Promise((res) => setTimeout(res, 1000));
     setStep(2);
     setLoading(false);
@@ -96,7 +97,7 @@ export default function RegisterCompanyScreen() {
     };
     try {
       await registerCompany(payload);
-      navigate('/auth/success');
+      navigate('/auth/login');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Erro ao cadastrar.');
@@ -258,7 +259,11 @@ export default function RegisterCompanyScreen() {
                   <FormItem>
                     <FormLabel>Razão Social</FormLabel>
                     <FormControl>
-                      <Input placeholder="Digite a razão social" {...field} />
+                      <Input
+                        disabled
+                        placeholder="Digite a razão social"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
