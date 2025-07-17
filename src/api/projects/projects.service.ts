@@ -8,6 +8,9 @@ export async function createProject(data: CreateProject) {
   formData.append('segmento', data.segmento ?? '');
   formData.append('inicio', data.inicio);
   formData.append('fim', data.fim);
+  if (data.company_id) {
+    formData.append('company_id', data.company_id);
+  }
 
   formData.append('modelo', JSON.stringify(data.modelo));
   formData.append('areas_execucao', JSON.stringify(data.areas_execucao));

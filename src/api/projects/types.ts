@@ -1,4 +1,5 @@
 export interface CreateProject {
+  company_id?: string;
   nome?: string;
   segmento?: string;
   inicio?: string;
