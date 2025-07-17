@@ -8,3 +8,8 @@ export async function updateProfile(data) {
   });
   return response.data;
 }
+
+export async function getUserByCpf(cpf: string) {
+  const response = await api.get(`/users/cpf/${cpf}`);
+  return response.data;
+}

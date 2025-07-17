@@ -15,12 +15,14 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, X } from 'lucide-react';
 import Logo from './Logo';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
 import { validateCNPJ } from '@/utils/validation';
 import { registerCompany } from '@/services/auth';
+import { Badge } from '@/components/ui/badge';
+import { getUserByCpf } from '@/api/users/users.service';
 
 const step1Schema = z
   .object({
@@ -40,6 +42,7 @@ const step2Schema = z.object({
   inscricaoEstadual: z.string().optional(),
   inscricaoMunicipal: z.string().optional(),
   telefone: z.string().min(8, 'Telefone inválido'),
+  usuariosCpfs: z.array(z.string()).optional(),
 });
 
 type Step1Data = z.infer<typeof step1Schema>;
@@ -50,6 +53,16 @@ export default function RegisterCompanyScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [cpfInput, setCpfInput] = useState('');
+  const [searchResult, setSearchResult] = useState<{
+    nome: string;
+    cpf: string;
+  } | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<{
+    nome: string;
+    cpf: string;
+  }[]>([]);
   const navigate = useNavigate();
 
   const formStep1 = useForm<Step1Data>({
@@ -70,6 +83,7 @@ export default function RegisterCompanyScreen() {
       inscricaoEstadual: '',
       inscricaoMunicipal: '',
       telefone: '',
+      usuariosCpfs: [],
     },
   });
 
@@ -92,6 +106,7 @@ export default function RegisterCompanyScreen() {
     const step1 = formStep1.getValues();
     const payload = {
       ...data,
+      usuariosCpfs: selectedUsers.map((u) => u.cpf),
       ...step1,
       senha: step1.password,
     };
@@ -104,6 +119,42 @@ export default function RegisterCompanyScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearchUser = async () => {
+    if (!cpfInput) return;
+    setSearchLoading(true);
+    try {
+      const user = await getUserByCpf(cpfInput.replace(/\D/g, ''));
+      setSearchResult({
+        nome: (user.nome_completo || user.nome) as string,
+        cpf: user.cpf,
+      });
+    } catch {
+      toast.error('Usuário não encontrado.');
+      setSearchResult(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleAddUser = () => {
+    if (!searchResult) return;
+    if (selectedUsers.some((u) => u.cpf === searchResult.cpf)) {
+      toast.error('Usuário já adicionado.');
+      return;
+    }
+    const updated = [...selectedUsers, searchResult];
+    setSelectedUsers(updated);
+    formStep2.setValue('usuariosCpfs', updated.map((u) => u.cpf));
+    setSearchResult(null);
+    setCpfInput('');
+  };
+
+  const handleRemoveUser = (cpf: string) => {
+    const updated = selectedUsers.filter((u) => u.cpf !== cpf);
+    setSelectedUsers(updated);
+    formStep2.setValue('usuariosCpfs', updated.map((u) => u.cpf));
   };
 
   return (
@@ -311,6 +362,41 @@ export default function RegisterCompanyScreen() {
                   </FormItem>
                 )}
               />
+
+              <FormItem>
+                <FormLabel>Associar usuários por CPF</FormLabel>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Digite o CPF"
+                    value={cpfInput}
+                    onChange={(e) => setCpfInput(e.target.value)}
+                  />
+                  <Button type="button" onClick={handleSearchUser} disabled={searchLoading}>
+                    {searchLoading ? 'Buscando...' : 'Buscar'}
+                  </Button>
+                </div>
+                {searchResult && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-sm">{searchResult.nome}</span>
+                    <Button type="button" size="sm" onClick={handleAddUser}>
+                      Adicionar
+                    </Button>
+                  </div>
+                )}
+                {selectedUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedUsers.map((user) => (
+                      <Badge key={user.cpf} className="flex items-center gap-1">
+                        {user.nome} ({user.cpf})
+                        <X
+                          className="w-3 h-3 cursor-pointer"
+                          onClick={() => handleRemoveUser(user.cpf)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </FormItem>
 
               <div className="flex gap-3 pt-4">
                 <Button
