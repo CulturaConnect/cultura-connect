@@ -86,6 +86,9 @@ const cronogramaSchema = z.object({
   orcamento_previsto: z.string().min(1, 'Orçamento é obrigatório'),
   inicio: z.string().min(1, 'Data de início é obrigatória'),
   fim: z.string().min(1, 'Data de fim é obrigatória'),
+}).refine((data) => new Date(data.fim) > new Date(data.inicio), {
+  message: 'Data de término deve ser após a de início',
+  path: ['fim'],
 });
 
 const equipeSchema = z.object({
@@ -95,12 +98,13 @@ const equipeSchema = z.object({
 });
 
 function createBaseSchema(isCompany: boolean) {
-  return z.object({
-    nome: z.string().min(2, 'Nome do projeto é obrigatório'),
-    segmento: z.string().min(1, 'Segmento é obrigatório'),
-    inicio: z.string().min(1, 'Data de início é obrigatória'),
-    fim: z.string().min(1, 'Data de fim é obrigatória'),
-    is_public: z.boolean().default(true),
+  return z
+    .object({
+      nome: z.string().min(2, 'Nome do projeto é obrigatório'),
+      segmento: z.string().min(1, 'Segmento é obrigatório'),
+      inicio: z.string().min(1, 'Data de início é obrigatória'),
+      fim: z.string().min(1, 'Data de fim é obrigatória'),
+      is_public: z.boolean().default(true),
     imagem: z
       .instanceof(File)
       .refine((file) => file.size <= 10 * 1024 * 1024, 'Arquivo maior que 10MB')
@@ -128,10 +132,14 @@ function createBaseSchema(isCompany: boolean) {
       ? z.string().min(1, 'Responsável principal é obrigatório')
       : z.string().optional(),
     equipe: z.array(equipeSchema).optional(),
-    responsavel_legal_id: isCompany
-      ? z.string().min(1, 'Responsável legal é obrigatório')
-      : z.string().optional(),
-  });
+      responsavel_legal_id: isCompany
+        ? z.string().min(1, 'Responsável legal é obrigatório')
+        : z.string().optional(),
+    })
+    .refine((data) => new Date(data.fim) > new Date(data.inicio), {
+      message: 'Data de término deve ser após a de início',
+      path: ['fim'],
+    });
 }
 
 type FormData = z.infer<ReturnType<typeof createBaseSchema>>;
@@ -296,6 +304,36 @@ export default function ProjectRegistrationForm() {
     control,
     name: 'areas_execucao',
   });
+
+  async function handleCepBlur(index: number, value: string) {
+    const cep = value.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.erro) return;
+      form.setValue(`areas_execucao.${index}.logradouro`, data.logradouro || '', {
+        shouldValidate: true,
+      });
+      form.setValue(`areas_execucao.${index}.bairro`, data.bairro || '', {
+        shouldValidate: true,
+      });
+      form.setValue(`areas_execucao.${index}.cidade`, data.localidade || '', {
+        shouldValidate: true,
+      });
+      form.setValue(`areas_execucao.${index}.rua`, data.logradouro || '', {
+        shouldValidate: true,
+      });
+      form.setValue(
+        `areas_execucao.${index}.complemento`,
+        data.complemento || '',
+        { shouldValidate: true },
+      );
+    } catch {
+      // ignore
+    }
+  }
 
   const {
     fields: equipeFields,
@@ -762,6 +800,24 @@ export default function ProjectRegistrationForm() {
 
       <FormField
         control={form.control}
+        name="resumo"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Resumo do projeto</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Descreva o resumo do projeto..."
+                className="min-h-[100px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="areas_execucao"
         render={({ field }) => (
           <FormItem>
@@ -796,7 +852,14 @@ export default function ProjectRegistrationForm() {
                         <FormItem className="w-full">
                           <FormLabel>CEP</FormLabel>
                           <FormControl>
-                            <Input placeholder="CEP" {...field} />
+                            <Input
+                              placeholder="CEP"
+                              {...field}
+                              onBlur={(e) => {
+                                field.onBlur();
+                                handleCepBlur(index, e.target.value);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -906,24 +969,6 @@ export default function ProjectRegistrationForm() {
                 Adicionar área
               </Button>
             </div>
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="resumo"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Resumo do projeto</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Descreva o resumo do projeto..."
-                className="min-h-[100px]"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
           </FormItem>
         )}
       />

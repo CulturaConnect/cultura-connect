@@ -9,15 +9,11 @@ export async function validateCNPJ(document: string): Promise<boolean> {
   const digits = document.replace(/\D/g, '');
   if (!cnpj.isValid(digits)) return false;
 
-  const url =
-    'https://api.allorigins.win/raw?url=' +
-    encodeURIComponent(`https://www.receitaws.com.br/v1/cnpj/${digits}`);
-
   try {
-    const res = await fetch(url);
+    const res = await fetch(`https://publica.cnpj.ws/cnpj/${digits}`);
     if (!res.ok) return false;
     const data = await res.json();
-    return !(data.status === 'ERROR');
+    return !!data.cnpj;
   } catch (err) {
     return false;
   }
