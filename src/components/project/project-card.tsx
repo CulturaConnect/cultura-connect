@@ -22,13 +22,15 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const navigate = useNavigate();
 
+  console.log(imageUrl, 'Image URL in ProjectCard');
+
   return (
     <Card
       onClick={() => navigate(`/project/${id}`)}
       className="relative overflow-hidden h-48 cursor-pointer group hover:scale-105 transition-transform"
     >
       <div
-        className="absolute inset-0 bg-cover bg-center "
+        className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${imageUrl})` }}
       >
         <div className="absolute inset-0 bg-black/60" />

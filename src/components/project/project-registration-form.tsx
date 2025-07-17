@@ -60,13 +60,21 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
 
 const modeloSchema = z.object({
-  missao: z.string().min(1, 'Campo obrigatório'),
-  visao: z.string().min(1, 'Campo obrigatório'),
-  mercado: z.string().min(1, 'Campo obrigatório'),
-  publico_alvo: z.string().min(1, 'Campo obrigatório'),
-  receita: z.string().min(1, 'Campo obrigatório'),
-  proposta_valor: z.string().min(1, 'Campo obrigatório'),
-  retencao: z.string().min(1, 'Campo obrigatório'),
+  missao: z
+    .string()
+    .min(1, 'Informe a missão do projeto — esse campo é obrigatório.'),
+  visao: z
+    .string()
+    .min(1, 'Descreva a visão de futuro do projeto. Campo obrigatório.'),
+  mercado: z
+    .string()
+    .min(1, 'Informe o mercado em que o projeto está inserido.'),
+  publico_alvo: z.string().min(1, 'Descreva o público-alvo do projeto.'),
+  receita: z.string().min(1, 'Explique como o projeto gera receita.'),
+  proposta_valor: z.string().min(1, 'Detalhe a proposta de valor do projeto.'),
+  retencao: z
+    .string()
+    .min(1, 'Descreva como o projeto pretende reter o público.'),
 });
 
 const areaExecucaoSchema = z.object({
@@ -88,8 +96,8 @@ const cronogramaSchema = z
     inicio: z.string().min(1, 'Data de início é obrigatória'),
     fim: z.string().min(1, 'Data de fim é obrigatória'),
   })
-  .refine((data) => new Date(data.fim) > new Date(data.inicio), {
-    message: 'Data de término deve ser após a de início',
+  .refine((data) => new Date(data.fim) >= new Date(data.inicio), {
+    message: 'Data de término deve ser igual ou posterior à de início',
     path: ['fim'],
   });
 
@@ -98,10 +106,6 @@ const equipeSchema = z.object({
   funcao: z.string().min(1, 'Função é obrigatória'),
   cpf_cnpj: z.string().min(11, 'CPF/CNPJ inválido'),
 });
-
-function createBaseSchema(isCompany: boolean) {
-  return;
-}
 
 const modelCards = [
   {
@@ -210,9 +214,9 @@ export default function ProjectRegistrationForm() {
 
   // Adiciona as validações de negócio
   const baseSchema = rawSchema.refine(
-    (data) => new Date(data.fim) > new Date(data.inicio),
+    (data) => new Date(data.fim) >= new Date(data.inicio),
     {
-      message: 'Data de término deve ser após a de início',
+      message: 'Data de término deve igual ou posterior à de início',
       path: ['fim'],
     },
   );
@@ -312,6 +316,7 @@ export default function ProjectRegistrationForm() {
 
   async function handleCepBlur(index: number, value: string) {
     const cep = value.replace(/\D/g, '');
+    console.log(value);
     if (cep.length !== 8) return;
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -401,17 +406,6 @@ export default function ProjectRegistrationForm() {
         5: rawSchema.pick({ equipe: true }),
       };
 
-  const validateStep = async () => {
-    const values = form.getValues();
-
-    try {
-      await stepSchema[currentStep].parseAsync(values);
-      setIsStepValid(true);
-    } catch {
-      setIsStepValid(false);
-    }
-  };
-
   const { mutateAsync, isPending } = useCreateProjectMutation();
 
   const onSubmit = async (values: FormData) => {
@@ -450,15 +444,37 @@ export default function ProjectRegistrationForm() {
     }
   }, [imageFile]);
 
-  useEffect(() => {
-    validateStep();
-  }, [form.watch(), currentStep]);
-
   const totalSteps = isCompany ? 6 : 5;
 
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
+  const nextStep = async () => {
+    const values = form.getValues();
+
+    try {
+      await stepSchema[currentStep].parseAsync(values);
+      setIsStepValid(true);
+      setCurrentStep((prev) => prev + 1);
+    } catch (err) {
+      setIsStepValid(false);
+
+      if (err instanceof z.ZodError) {
+        const formattedErrors = err.errors.map((e) => {
+          const path = Array.isArray(e.path) ? e.path.join('.') : e.path;
+          return `• ${e.message}`;
+        });
+
+        const errorMessage = formattedErrors.join('\n');
+
+        toast.error('Erros na validação:', {
+          description: (
+            <div className="text-sm whitespace-pre-wrap">{errorMessage}</div>
+          ),
+          duration: 5000,
+          dismissible: true,
+        });
+      } else {
+        toast.error('Erro inesperado na validação.');
+        console.error(err);
+      }
     }
   };
 
@@ -851,20 +867,6 @@ export default function ProjectRegistrationForm() {
                   <div className="grid grid-cols-2 gap-4 w-full">
                     <FormField
                       control={form.control}
-                      name={`areas_execucao.${index}.rua`}
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Rua</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Rua" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name={`areas_execucao.${index}.cep`}
                       render={({ field }) => (
                         <FormItem className="w-full">
@@ -873,11 +875,29 @@ export default function ProjectRegistrationForm() {
                             <Input
                               placeholder="CEP"
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                handleCepBlur(index, e.target.value);
+                              }}
                               onBlur={(e) => {
                                 field.onBlur();
                                 handleCepBlur(index, e.target.value);
                               }}
                             />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`areas_execucao.${index}.rua`}
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Rua</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Rua" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1028,6 +1048,37 @@ export default function ProjectRegistrationForm() {
                 {...field}
               />
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="orcamento_previsto"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Orçamento previsto *</FormLabel>
+            <FormControl>
+              <Input type="number" placeholder="Valor previsto" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="orcamento_gasto"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Orçamento gasto</FormLabel>
+            <FormControl>
+              <Input type="number" placeholder="Valor gasto" {...field} />
+            </FormControl>
+            <FormDescription>
+              Esse valor pode ser alterado no decorrer do projeto
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -1195,37 +1246,6 @@ export default function ProjectRegistrationForm() {
           </FormItem>
         )}
       />
-
-      <FormField
-        control={form.control}
-        name="orcamento_previsto"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Orçamento previsto *</FormLabel>
-            <FormControl>
-              <Input type="number" placeholder="Valor previsto" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="orcamento_gasto"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Orçamento gasto</FormLabel>
-            <FormControl>
-              <Input type="number" placeholder="Valor gasto" {...field} />
-            </FormControl>
-            <FormDescription>
-              Esse valor pode ser alterado no decorrer do projeto
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   );
 
@@ -1265,7 +1285,6 @@ export default function ProjectRegistrationForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -1280,7 +1299,6 @@ export default function ProjectRegistrationForm() {
                 placeholder="CPF do responsável principal"
               />
             </FormControl>
-            <FormMessage />
           </FormItem>
         </>
       )}
@@ -1314,7 +1332,6 @@ export default function ProjectRegistrationForm() {
                             placeholder="Nome do integrante"
                           />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -1335,7 +1352,6 @@ export default function ProjectRegistrationForm() {
                             placeholder="Função do integrante"
                           />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -1356,7 +1372,6 @@ export default function ProjectRegistrationForm() {
                             placeholder="000.000.000-00 ou 00.000.000/0000-00"
                           />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -1481,7 +1496,7 @@ export default function ProjectRegistrationForm() {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-6 overflow-y-auto max-h-full px-2 pb-5"
+            className="space-y-6 overflow-y-auto px-2 pb-5"
           >
             {renderSteps()}
 
@@ -1497,7 +1512,7 @@ export default function ProjectRegistrationForm() {
 
               {currentStep === totalSteps ? (
                 <Button
-                  disabled={!isStepValid || isPending}
+                  disabled={isPending}
                   type="submit"
                   className="bg-blue-500 hover:bg-blue-600"
                 >
@@ -1510,7 +1525,7 @@ export default function ProjectRegistrationForm() {
                 <Button
                   type="button"
                   onClick={nextStep}
-                  disabled={!isStepValid || isPending}
+                  disabled={isPending}
                   className="bg-blue-500 hover:bg-blue-600"
                 >
                   {isPending && (

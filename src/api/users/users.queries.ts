@@ -9,7 +9,13 @@ export function useUpdateProfile() {
     mutationKey: ['update-profile'],
     mutationFn: updateProfile,
     onSuccess: (data) => {
-      updateUser(data);
+      if (!data?.user) {
+        toast.error('Erro ao atualizar o perfil.');
+        return;
+      }
+
+      updateUser(data?.user);
+
       toast.success('Perfil atualizado com sucesso!');
 
       return true;

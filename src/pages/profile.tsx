@@ -21,7 +21,7 @@ export default function ProfileScreen() {
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    empresa: user?.nome || '',
+    empresa: user?.razaoSocial || '',
     nome: user?.nome || '',
     cpf: user?.tipo === 'person' ? user.cpf : null,
     cnpj: user?.tipo === 'company' ? user.cnpj : null,
@@ -106,14 +106,14 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (user) {
       setFormData({
-        empresa: user.nome || '',
+        empresa: user.razaoSocial || '',
         nome: user.nome || '',
         cpf: user.tipo === 'person' ? user.cpf : '',
         cnpj: user.tipo === 'company' ? user.cnpj : '',
         telefone: user.telefone || '',
         mei: user.tipo === 'company' ? user.isMei : null,
         inscricaoEstadual: user.inscricaoEstadual || null,
-        imagem: null,
+        imagem: user?.imagemUrl || null,
         inscricaoMunicipal: user.inscricaoMunicipal || null,
         email: user.email || '',
         senhaAtual: '',
@@ -121,7 +121,7 @@ export default function ProfileScreen() {
         confirmarSenha: '',
       });
 
-      setPreviewUrl(user.imagemUrl || null);
+      setPreviewUrl(user?.imagemUrl || null);
     }
   }, [user]);
 
@@ -137,9 +137,6 @@ export default function ProfileScreen() {
       </main>
     );
   }
-
-  console.log('User:', user);
-  console.log('User data:', formData);
 
   if (isEditing) {
     return (
@@ -214,6 +211,7 @@ export default function ProfileScreen() {
                 <Input
                   id="empresa"
                   value={formData.empresa}
+                  disabled
                   onChange={(e) => handleInputChange('empresa', e.target.value)}
                   className="mt-1"
                   placeholder="Lorem Ipsum"
@@ -310,7 +308,6 @@ export default function ProfileScreen() {
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Esqueci minha senha</p>
             </div>
 
             <div>

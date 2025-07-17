@@ -21,6 +21,7 @@ export interface AuthUser {
   isMei: boolean;
   cpf: string | null;
   inscricaoEstadual: string | null;
+  razaoSocial: string | null;
   inscricaoMunicipal: string | null;
   imagemUrl: string | null;
 }
@@ -114,8 +115,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setToken(response.token);
   }
 
-  function updateUser(userData: AuthUser) {
-    setUser(userData);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function updateUser(userData: any) {
+    setUser({
+      ...user,
+
+      imagemUrl: userData.imagem_url || user?.imagemUrl || null,
+      inscricaoEstadual:
+        userData.inscricao_estadual || user?.inscricaoEstadual || null,
+      inscricaoMunicipal:
+        userData.inscricao_municipal || user?.inscricaoMunicipal || null,
+      isMei: userData.is_mei || user?.isMei || false,
+      razaoSocial: userData.razao_social || user?.nome || null,
+      telefone: userData.telefone || user?.telefone || '',
+    });
     localStorage.setItem('@App:user', JSON.stringify(userData));
   }
 

@@ -10,6 +10,6 @@ export async function updateProfile(data) {
 }
 
 export async function getUserByCpf(cpf: string) {
-  const response = await api.get(`/users/cpf/${cpf}`);
+  const response = await api.get(`/users/search?cpf=${cpf}`);
   return response.data;
 }
