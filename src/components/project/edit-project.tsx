@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useUpdateProjectMutation } from '@/api/projects/projects.queries';
 import { CreateProject, Project } from '@/api/projects/types';
+import { CurrencyInput } from '../ui/currency-input';
 
 interface ProjectActivity {
   id: string;
@@ -196,24 +197,22 @@ export default function EditProjectTab({
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="budget-planned">Orçamento Previsto (R$)</Label>
-                <Input
+                <CurrencyInput
                   id="budget-planned"
-                  type="number"
                   value={budgetPlanned}
-                  onChange={(e) => setBudgetPlanned(e.target.value)}
+                  onValueChange={(value) => setBudgetPlanned(value || '')}
                   className="mt-2"
-                  placeholder="0,00"
+                  placeholder="R$ 0,00"
                 />
               </div>
               <div>
                 <Label htmlFor="budget-spent">Orçamento Gasto (R$)</Label>
-                <Input
+                <CurrencyInput
                   id="budget-spent"
-                  type="number"
                   value={budgetSpent}
-                  onChange={(e) => setBudgetSpent(e.target.value)}
+                  onValueChange={(value) => setBudgetSpent(value || '')}
                   className="mt-2"
-                  placeholder="0,00"
+                  placeholder="R$ 0,00"
                 />
               </div>
             </div>
@@ -230,13 +229,18 @@ export default function EditProjectTab({
                   }`}
                 >
                   R${' '}
-                  {(
-                    Number.parseFloat(budgetPlanned) -
-                    Number.parseFloat(budgetSpent)
-                  ).toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {(() => {
+                    const planned = parseFloat(budgetPlanned);
+                    const spent = parseFloat(budgetSpent);
+
+                    const difference =
+                      isNaN(planned) || isNaN(spent) ? 0 : planned - spent;
+
+                    return difference.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    });
+                  })()}
                 </span>
               </div>
               <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
@@ -255,7 +259,15 @@ export default function EditProjectTab({
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>R$ 0</span>
                 <span>
-                  R$ {Number.parseFloat(budgetPlanned).toLocaleString('pt-BR')}
+                  {(() => {
+                    const value = parseFloat(budgetPlanned);
+                    return isNaN(value)
+                      ? 'R$ --'
+                      : `R$ ${value.toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`;
+                  })()}{' '}
                 </span>
               </div>
             </div>

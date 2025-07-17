@@ -33,7 +33,7 @@ export function ProjectsGrid({ filterBy = 'all' }: ProjectsGridProps) {
       : data;
 
   return (
-    <div className="p-6">
+    <div className="p-6 overflow-y-auto flex-1">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {projects?.map((project) => (
           <ProjectCard

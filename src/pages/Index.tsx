@@ -9,13 +9,13 @@ const Index = () => {
   const [tab, setTab] = useState<'all' | 'mine'>('all');
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen max-h-screen pb-20 overflow-y-auto flex flex-col">
       <Header />
 
       <Tabs
         value={tab}
         onValueChange={(v) => setTab(v as 'all' | 'mine')}
-        className="px-4"
+        className="px-4 pb-2"
       >
         <TabsList>
           <TabsTrigger value="mine">Meus projetos</TabsTrigger>

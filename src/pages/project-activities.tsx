@@ -46,6 +46,8 @@ import {
   Target,
   Loader2,
 } from 'lucide-react';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { toast } from 'sonner';
 
 interface ProjectActivity {
   id: string;
@@ -192,6 +194,48 @@ export default function ProjectActivities() {
   };
 
   const handleDialogSave = () => {
+    const { title, description, status, budget, start, end } = activityForm;
+
+    const missingFields = [];
+
+    if (!title.trim()) missingFields.push('Título');
+    if (!description.trim()) missingFields.push('Descrição');
+    if (!status.trim()) missingFields.push('Status');
+    if (!budget || isNaN(budget)) missingFields.push('Orçamento');
+    if (!start) missingFields.push('Data de Início');
+    if (!end) missingFields.push('Data de Término');
+
+    // Se faltar qualquer campo
+    if (missingFields.length > 0) {
+      toast.error('Preencha todos os campos obrigatórios', {
+        description: `Campos faltando: ${missingFields.join(', ')}`,
+      });
+      return;
+    }
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const projectStart = new Date(data?.inicio);
+    const projectEnd = new Date(data?.fim);
+
+    if (startDate < projectStart || endDate > projectEnd) {
+      toast.error('Datas fora do período do projeto', {
+        description: `A atividade deve estar entre ${projectStart.toLocaleDateString(
+          'pt-BR',
+        )} e ${projectEnd.toLocaleDateString('pt-BR')}`,
+      });
+      return;
+    }
+
+    if (endDate < startDate) {
+      toast.error('Data de término inválida', {
+        description:
+          'A data de término não pode ser anterior à data de início.',
+      });
+      return;
+    }
+
+    // Se passou por tudo, salva!
     if (editingIndex !== null) {
       const updated = [...activities];
       updated[editingIndex] = activityForm;
@@ -199,6 +243,7 @@ export default function ProjectActivities() {
     } else {
       setActivities([...activities, activityForm]);
     }
+
     setDialogOpen(false);
   };
 
@@ -566,14 +611,13 @@ export default function ProjectActivities() {
                         >
                           Orçamento (R$)
                         </Label>
-                        <Input
+                        <CurrencyInput
                           id="budget"
-                          type="number"
                           value={activityForm.budget}
-                          onChange={(e) =>
+                          onValueChange={(e) =>
                             setActivityForm({
                               ...activityForm,
-                              budget: Number(e.target.value),
+                              budget: Number(e.replace(',', '.')) || 0,
                             })
                           }
                           className="mt-2 border-slate-200 focus:border-blue-500"

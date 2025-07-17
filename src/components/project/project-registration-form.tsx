@@ -58,6 +58,7 @@ import { useAuth } from '@/contexts/auth';
 import { useCreateProjectMutation } from '@/api/projects/projects.queries';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
+import { CurrencyInput } from '../ui/currency-input';
 
 const modeloSchema = z.object({
   missao: z
@@ -1060,7 +1061,13 @@ export default function ProjectRegistrationForm() {
           <FormItem>
             <FormLabel>Orçamento previsto *</FormLabel>
             <FormControl>
-              <Input type="number" placeholder="Valor previsto" {...field} />
+              <CurrencyInput
+                value={field.value}
+                onValueChange={(value) => field.onChange(value ?? '')}
+                onBlur={field.onBlur}
+                name={field.name}
+                placeholder="R$ 0,00"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -1074,7 +1081,13 @@ export default function ProjectRegistrationForm() {
           <FormItem>
             <FormLabel>Orçamento gasto</FormLabel>
             <FormControl>
-              <Input type="number" placeholder="Valor gasto" {...field} />
+              <CurrencyInput
+                value={field.value}
+                onValueChange={(value) => field.onChange(value ?? '')}
+                onBlur={field.onBlur}
+                name={field.name}
+                placeholder="R$ 0,00"
+              />
             </FormControl>
             <FormDescription>
               Esse valor pode ser alterado no decorrer do projeto
@@ -1180,7 +1193,15 @@ export default function ProjectRegistrationForm() {
                         <FormItem>
                           <FormLabel>Orçamento Previsto</FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} />
+                            <CurrencyInput
+                              value={field.value}
+                              onValueChange={(value) =>
+                                field.onChange(value ?? '')
+                              }
+                              onBlur={field.onBlur}
+                              name={field.name}
+                              placeholder="R$ 0,00"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
