@@ -411,7 +411,10 @@ export default function ProjectRegistrationForm() {
 
   const onSubmit = async (values: FormData) => {
     try {
-      const res = await mutateAsync(values);
+      const res = await mutateAsync({
+        ...values,
+        company_id: user?.id,
+      });
 
       if (res) {
         navigate('/', { replace: true });
