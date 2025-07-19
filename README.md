@@ -36,6 +36,14 @@ npm i
 npm run dev
 ```
 
+### Running tests
+
+Execute the test suite with:
+
+```sh
+npm test
+```
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
