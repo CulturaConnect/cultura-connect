@@ -17,6 +17,8 @@ import ProfileScreen from './pages/profile';
 import ProjectDetails from './pages/project-details';
 import ProjectActivities from './pages/project-activities';
 import PrivateRoute from './components/auth/PrivateRoute';
+import AdminRoute from './components/auth/AdminRoute';
+import AdminDashboard from './pages/admin-dashboard';
 
 const queryClient = new QueryClient();
 
@@ -69,6 +71,15 @@ const App = () => (
 
             <Route path="/auth/recover" element={<RecoveryPassword />} />
             <Route path="/auth/login" element={<Login />} />
+
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
 
             {/* ADD ALL CUSTOM ROUTES BELOW THE CATCH-ALL "*" ROUTE */}
 
