@@ -1,6 +1,8 @@
 import {
   Bar,
   BarChart,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -42,14 +44,39 @@ export default function AdminDashboard() {
     <div className="px-4 space-y-4 pt-4 pb-20">
       <Header showSearch={false} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Total de Projetos</CardTitle>
-        </CardHeader>
-        <CardContent className="h-40 flex items-center justify-center text-4xl font-bold">
-          {metrics.totalProjects}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total de Projetos</CardTitle>
+          </CardHeader>
+          <CardContent className="h-24 flex items-center justify-center text-3xl font-bold">
+            {metrics.totalProjects}
+          </CardContent>
+        </Card>
+
+        {metrics.totalUsers !== undefined && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Total de Usu\u00e1rios</CardTitle>
+            </CardHeader>
+            <CardContent className="h-24 flex items-center justify-center text-3xl font-bold">
+              {metrics.totalUsers}
+            </CardContent>
+          </Card>
+        )}
+
+        {metrics.totalCompanies !== undefined && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Total de Empresas</CardTitle>
+            </CardHeader>
+            <CardContent className="h-24 flex items-center justify-center text-3xl font-bold">
+              {metrics.totalCompanies}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Projetos por Status</CardTitle>
@@ -57,7 +84,7 @@ export default function AdminDashboard() {
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={metrics.projectsByStatus}>
-              <XAxis dataKey="status" />
+              <XAxis dataKey="name" />
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Bar dataKey="count" fill="#0ea5e9" />
@@ -65,33 +92,78 @@ export default function AdminDashboard() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Distribuição</CardTitle>
-        </CardHeader>
-        <CardContent className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={metrics.projectsByStatus}
-                dataKey="count"
-                nameKey="status"
-                innerRadius={40}
-                outerRadius={80}
-                label
-              >
-                {metrics.projectsByStatus.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={pieColors[index % pieColors.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+
+      {metrics.projectsBySegment && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Projetos por Segmento</CardTitle>
+          </CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={metrics.projectsBySegment}
+                  dataKey="count"
+                  nameKey="name"
+                  innerRadius={40}
+                  outerRadius={80}
+                  label
+                >
+                  {metrics.projectsBySegment.map((entry, index) => (
+                    <Cell key={`seg-${index}`} fill={pieColors[index % pieColors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {metrics.usersByType && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Usu\u00e1rios por Tipo</CardTitle>
+          </CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={metrics.usersByType}
+                  dataKey="count"
+                  nameKey="name"
+                  innerRadius={40}
+                  outerRadius={80}
+                  label
+                >
+                  {metrics.usersByType.map((entry, index) => (
+                    <Cell key={`user-${index}`} fill={pieColors[index % pieColors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {metrics.projectsByMonth && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Projetos (\u00faltimos meses)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={metrics.projectsByMonth}>
+                <XAxis dataKey="month" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Line type="monotone" dataKey="count" stroke="#0ea5e9" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       <BottomNavigation />
     </div>
