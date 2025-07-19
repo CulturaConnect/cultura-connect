@@ -18,12 +18,27 @@ import { BottomNavigation } from '@/components/layout/bottom-navigation';
 import { Header } from '@/components/layout/header';
 
 export default function AdminDashboard() {
-  const { data: metrics } = useQuery({
+  const { data: metrics, isLoading } = useQuery({
     queryKey: ['admin-metrics'],
     queryFn: getAdminMetrics,
   });
 
   const pieColors = ['#0ea5e9', '#059669', '#eab308', '#ef4444'];
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle>Carregando...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            Por favor, aguarde enquanto os dados são carregados.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!metrics) {
     return (
@@ -57,7 +72,7 @@ export default function AdminDashboard() {
         {metrics.totalUsers !== undefined && (
           <Card>
             <CardHeader>
-              <CardTitle>Total de Usu\u00e1rios</CardTitle>
+              <CardTitle>Total de Usuários</CardTitle>
             </CardHeader>
             <CardContent className="h-24 flex items-center justify-center text-3xl font-bold">
               {metrics.totalUsers}
@@ -110,7 +125,10 @@ export default function AdminDashboard() {
                   label
                 >
                   {metrics.projectsBySegment.map((entry, index) => (
-                    <Cell key={`seg-${index}`} fill={pieColors[index % pieColors.length]} />
+                    <Cell
+                      key={`seg-${index}`}
+                      fill={pieColors[index % pieColors.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -123,7 +141,7 @@ export default function AdminDashboard() {
       {metrics.usersByType && (
         <Card>
           <CardHeader>
-            <CardTitle>Usu\u00e1rios por Tipo</CardTitle>
+            <CardTitle>Usuários por Tipo</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -137,7 +155,10 @@ export default function AdminDashboard() {
                   label
                 >
                   {metrics.usersByType.map((entry, index) => (
-                    <Cell key={`user-${index}`} fill={pieColors[index % pieColors.length]} />
+                    <Cell
+                      key={`user-${index}`}
+                      fill={pieColors[index % pieColors.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -150,15 +171,39 @@ export default function AdminDashboard() {
       {metrics.projectsByMonth && (
         <Card>
           <CardHeader>
-            <CardTitle>Projetos (\u00faltimos meses)</CardTitle>
+            <CardTitle>Projetos</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={metrics.projectsByMonth}>
-                <XAxis dataKey="month" />
+                <XAxis
+                  dataKey="month"
+                  tickFormatter={(value: string) => {
+                    const date = new Date(value);
+                    if (isNaN(date.getTime())) return 'Data Inválida';
+                    return new Date(value).toLocaleDateString('pt-BR', {
+                      month: 'short',
+                      year: 'numeric',
+                    });
+                  }}
+                />
                 <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="count" stroke="#0ea5e9" strokeWidth={2} />
+                <Tooltip
+                  labelFormatter={(label: string) => {
+                    const date = new Date(label);
+                    if (isNaN(date.getTime())) return 'Data Inválida';
+                    return date.toLocaleDateString('pt-BR', {
+                      month: 'long',
+                      year: 'numeric',
+                    });
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

@@ -66,12 +66,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     if (storagedToken && storagedUser && !isTokenExpired(storagedToken)) {
       setUser(JSON.parse(storagedUser));
-      if (
-        JSON.parse(storagedUser).tipo === 'admin' &&
-        window.location.pathname !== '/admin'
-      ) {
-        navigate('/admin');
-      }
       api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
     } else if (storagedToken) {
       Logout();
@@ -103,6 +97,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (user?.tipo === 'admin' && window.location.pathname !== '/admin') {
+      navigate('/admin');
+    }
+  }, [user, navigate]);
 
   async function Login(userData: object) {
     const response = await login(userData);
