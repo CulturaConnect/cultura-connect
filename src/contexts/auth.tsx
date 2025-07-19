@@ -11,7 +11,7 @@ import { getToken, setToken, removeToken, isTokenExpired } from '@/utils/auth';
 import { forgotPassword, login } from '@/services/auth';
 import api from '@/lib/api';
 
-function transformApiUser(data: any): AuthUser {
+function transformApiUser(data): AuthUser {
   return {
     id: data.id,
     tipo: data.type || data.tipo,
@@ -21,8 +21,8 @@ function transformApiUser(data: any): AuthUser {
     cnpj: data.cnpj || null,
     isMei: data.is_mei ?? data.isMei ?? false,
     cpf: data.cpf || null,
-    inscricaoEstadual: data.inscricao_estadual ?? data.inscricaoEstadual ?? null,
-    razaoSocial: data.razao_social ?? data.razaoSocial ?? null,
+    inscricaoEstadual:
+      data.inscricao_estadual ?? data.inscricaoEstadual ?? null,
     inscricaoMunicipal:
       data.inscricao_municipal ?? data.inscricaoMunicipal ?? null,
     imagemUrl: data.imagem_url ?? data.imagemUrl ?? null,
@@ -39,7 +39,6 @@ export interface AuthUser {
   isMei: boolean;
   cpf: string | null;
   inscricaoEstadual: string | null;
-  razaoSocial: string | null;
   inscricaoMunicipal: string | null;
   imagemUrl: string | null;
 }
@@ -67,6 +66,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     if (storagedToken && storagedUser && !isTokenExpired(storagedToken)) {
       setUser(JSON.parse(storagedUser));
+      if (
+        JSON.parse(storagedUser).tipo === 'admin' &&
+        window.location.pathname !== '/admin'
+      ) {
+        navigate('/admin');
+      }
       api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
     } else if (storagedToken) {
       Logout();
