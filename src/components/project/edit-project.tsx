@@ -78,21 +78,8 @@ export default function EditProjectTab({
   const [budgetPlanned, setBudgetPlanned] = useState(
     project.orcamento_previsto.toString() || '0',
   );
-  const [activities] = useState<ProjectActivity[]>(
-    project.cronograma_atividades.map((activity, index) => ({
-      id: (index + 1).toString(),
-      title: activity.titulo,
-      description: activity.descricao,
-      status: activity.status || 'novo',
-      budget: activity.orcamento_previsto || 0,
-      start: activity.inicio || '',
-      end: activity.fim || '',
-    })),
-  );
 
   const { mutateAsync, isPending } = useUpdateProjectMutation();
-
-  /* old activity handlers removed as activities are managed in a dedicated page */
 
   const getStatusBadge = (status: string) => {
     const statusOption = statusOptions.find(

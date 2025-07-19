@@ -59,10 +59,12 @@ export default function RegisterCompanyScreen() {
     cpf: string;
   } | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<{
-    nome: string;
-    cpf: string;
-  }[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<
+    {
+      nome: string;
+      cpf: string;
+    }[]
+  >([]);
   const navigate = useNavigate();
 
   const formStep1 = useForm<Step1Data>({
@@ -114,8 +116,8 @@ export default function RegisterCompanyScreen() {
       await registerCompany(payload);
       navigate('/auth/login');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Erro ao cadastrar.');
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Erro ao cadastrar.');
     } finally {
       setLoading(false);
     }
@@ -146,7 +148,10 @@ export default function RegisterCompanyScreen() {
     }
     const updated = [...selectedUsers, searchResult];
     setSelectedUsers(updated);
-    formStep2.setValue('usuariosCpfs', updated.map((u) => u.cpf));
+    formStep2.setValue(
+      'usuariosCpfs',
+      updated.map((u) => u.cpf),
+    );
     setSearchResult(null);
     setCpfInput('');
   };
@@ -154,7 +159,10 @@ export default function RegisterCompanyScreen() {
   const handleRemoveUser = (cpf: string) => {
     const updated = selectedUsers.filter((u) => u.cpf !== cpf);
     setSelectedUsers(updated);
-    formStep2.setValue('usuariosCpfs', updated.map((u) => u.cpf));
+    formStep2.setValue(
+      'usuariosCpfs',
+      updated.map((u) => u.cpf),
+    );
   };
 
   return (
@@ -371,7 +379,11 @@ export default function RegisterCompanyScreen() {
                     value={cpfInput}
                     onChange={(e) => setCpfInput(e.target.value)}
                   />
-                  <Button type="button" onClick={handleSearchUser} disabled={searchLoading}>
+                  <Button
+                    type="button"
+                    onClick={handleSearchUser}
+                    disabled={searchLoading}
+                  >
                     {searchLoading ? 'Buscando...' : 'Buscar'}
                   </Button>
                 </div>

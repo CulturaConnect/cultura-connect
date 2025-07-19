@@ -13,7 +13,7 @@ export function useCheckResetCodeMutation() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.message || 'Erro ao verificar o código.',
+        error?.response?.data?.error || 'Erro ao verificar o código.',
       );
     },
   });
@@ -29,9 +29,7 @@ export function useResetPasswordMutation() {
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
-      toast.error(
-        error?.response?.data?.message || 'Erro ao redefinir a senha.',
-      );
+      toast.error(error?.response?.data?.error || 'Erro ao redefinir a senha.');
     },
   });
 }
@@ -46,7 +44,7 @@ export function useForgotPasswordMutation() {
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Erro ao enviar o e-mail.');
+      toast.error(error?.response?.data?.error || 'Erro ao enviar o e-mail.');
     },
   });
 }

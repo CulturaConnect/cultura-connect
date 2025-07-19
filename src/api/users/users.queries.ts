@@ -23,7 +23,7 @@ export function useUpdateProfile() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.message || 'Erro ao atualizar o perfil.',
+        error?.response?.data?.error || 'Erro ao atualizar o perfil.',
       );
     },
   });

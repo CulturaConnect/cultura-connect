@@ -24,8 +24,8 @@ const LoginScreen = () => {
       await Login({ email, senha: password });
       navigate('/');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Erro ao fazer login.');
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Erro ao fazer login.');
     } finally {
       setLoading(false);
     }

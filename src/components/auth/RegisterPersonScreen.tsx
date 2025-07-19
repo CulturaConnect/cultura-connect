@@ -67,14 +67,20 @@ export default function RegisterPersonScreen() {
       return;
     }
 
-    const formattedValues = {
-      ...rest,
-      senha: password,
-    };
+    try {
+      const formattedValues = {
+        ...rest,
+        senha: password,
+      };
 
-    await registerPerson(formattedValues);
-    setLoading(false);
-    navigate('/auth/success');
+      await registerPerson(formattedValues);
+      setLoading(false);
+      navigate('/auth/login');
+    } catch (err: unknown) {
+      setLoading(false);
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Erro ao cadastrar.');
+    }
   };
 
   return (

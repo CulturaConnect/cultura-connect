@@ -59,6 +59,7 @@ import { useCreateProjectMutation } from '@/api/projects/projects.queries';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
 import { CurrencyInput } from '../ui/currency-input';
+import { CanvasDrawer } from './canvas-drawer';
 
 const modeloSchema = z.object({
   missao: z
@@ -177,43 +178,93 @@ const modelCards = [
 export default function ProjectRegistrationForm() {
   const { user } = useAuth();
   const isCompany = user?.tipo === 'company';
+
+  const MAX_FILE_SIZE_MB = 10;
+  const ACCEPTED_IMAGE_TYPES = [
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/svg+xml',
+  ];
+
   const rawSchema = z.object({
-    nome: z.string().min(2, 'Nome do projeto é obrigatório'),
-    segmento: z.string().min(1, 'Segmento é obrigatório'),
-    inicio: z.string().min(1, 'Data de início é obrigatória'),
-    fim: z.string().min(1, 'Data de fim é obrigatória'),
+    nome: z
+      .string({ required_error: 'O nome do projeto é obrigatório.' })
+      .min(2, 'O nome do projeto precisa ter no mínimo 2 caracteres.'),
+
+    segmento: z
+      .string({ required_error: 'Por favor, selecione um segmento.' })
+      .min(1, 'Por favor, selecione um segmento.'),
+
+    inicio: z
+      .string({ required_error: 'A data de início é obrigatória.' })
+      .min(1, 'A data de início é obrigatória.'),
+
+    fim: z
+      .string({ required_error: 'A data final é obrigatória.' })
+      .min(1, 'A data final é obrigatória.'),
+
     is_public: z.boolean().default(true),
+
     imagem: z
-      .instanceof(File)
-      .refine((file) => file.size <= 10 * 1024 * 1024, 'Arquivo maior que 10MB')
+      .instanceof(File, {
+        message: 'É necessário enviar uma imagem para o projeto.',
+      })
       .refine(
-        (file) =>
-          ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'].includes(
-            file.type,
-          ),
-        'Formato inválido',
+        (file) => file.size <= MAX_FILE_SIZE_MB * 1024 * 1024,
+        `O arquivo da imagem deve ser menor que ${MAX_FILE_SIZE_MB}MB.`,
+      )
+      .refine(
+        (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+        'Formato de imagem inválido. Use PNG, JPG, JPEG ou SVG.',
       ),
+
     modelo: modeloSchema,
-    titulo_oficial: z.string().min(2, 'Título oficial é obrigatório'),
+
+    titulo_oficial: z
+      .string({ required_error: 'O título oficial do projeto é obrigatório.' })
+      .min(2, 'O título oficial precisa ter no mínimo 2 caracteres.'),
+
     areas_execucao: z
       .array(areaExecucaoSchema)
-      .min(1, 'Pelo menos uma área de execução é obrigatória'),
-    resumo: z.string().min(10, 'Resumo é obrigatório'),
-    objetivos_gerais: z.string().min(10, 'Objetivos gerais são obrigatórios'),
-    metas: z.string().min(10, 'Metas são obrigatórias'),
+      .min(1, 'É necessário adicionar pelo menos uma área de execução.'),
+
+    resumo: z.string({ required_error: 'O resumo do projeto é obrigatório.' }),
+    objetivos_gerais: z.string({
+      required_error: 'O campo de objetivos gerais é obrigatório.',
+    }),
+    metas: z.string({ required_error: 'O campo de metas é obrigatório.' }),
+
     cronograma_atividades: z
       .array(cronogramaSchema)
-      .min(1, 'Cronograma é obrigatório'),
-    orcamento_previsto: z.string().min(1, 'Orçamento previsto é obrigatório'),
+      .min(1, 'É necessário adicionar pelo menos uma atividade ao cronograma.'),
+
+    orcamento_previsto: z
+      .string({ required_error: 'O orçamento previsto é obrigatório.' })
+      .min(1, 'O orçamento previsto é obrigatório.'),
+
     orcamento_gasto: z.string().optional(),
-    responsavel_principal_id: z
-      .string()
-      .min(1, 'Responsável principal é obrigatório'),
+
+    // IDs de responsáveis agora são opcionais
+    responsavel_principal_id: z.string().optional(),
+    responsavel_legal_id: z.string().optional(),
+
     equipe: z.array(equipeSchema).optional(),
-    responsavel_legal_id: z.string().min(1, 'Responsável legal é obrigatório'),
   });
 
-  // Adiciona as validações de negócio
+  const step1Schema = rawSchema
+    .pick({
+      nome: true,
+      segmento: true,
+      inicio: true,
+      fim: true,
+      is_public: true,
+    })
+    .refine((data) => new Date(data.fim) >= new Date(data.inicio), {
+      message: 'A data final não pode ser anterior à data de início.',
+      path: ['fim'],
+    });
+
   const baseSchema = rawSchema.refine(
     (data) => new Date(data.fim) >= new Date(data.inicio),
     {
@@ -225,7 +276,6 @@ export default function ProjectRegistrationForm() {
   type FormData = z.infer<typeof baseSchema>;
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [isStepValid, setIsStepValid] = useState(false);
   const [legalResponsible, setLegalResponsible] = useState({
     responsibleName: '',
     phone: '',
@@ -238,6 +288,7 @@ export default function ProjectRegistrationForm() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(baseSchema),
+
     defaultValues: {
       nome: '',
       segmento: '',
@@ -317,7 +368,6 @@ export default function ProjectRegistrationForm() {
 
   async function handleCepBlur(index: number, value: string) {
     const cep = value.replace(/\D/g, '');
-    console.log(value);
     if (cep.length !== 8) return;
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -361,12 +411,7 @@ export default function ProjectRegistrationForm() {
 
   const stepSchema: Record<number, ZodSchema> = isCompany
     ? {
-        1: rawSchema.pick({
-          nome: true,
-          segmento: true,
-          inicio: true,
-          fim: true,
-        }),
+        1: step1Schema,
         2: rawSchema.pick({ modelo: true }),
         3: rawSchema.pick({ responsavel_legal_id: true }),
         4: rawSchema.pick({
@@ -384,13 +429,7 @@ export default function ProjectRegistrationForm() {
         6: rawSchema.pick({ responsavel_principal_id: true, equipe: true }),
       }
     : {
-        1: rawSchema.pick({
-          nome: true,
-          segmento: true,
-          inicio: true,
-          fim: true,
-          is_public: true,
-        }),
+        1: step1Schema,
         2: rawSchema.pick({ modelo: true }),
         3: rawSchema.pick({
           titulo_oficial: true,
@@ -428,8 +467,8 @@ export default function ProjectRegistrationForm() {
         navigate('/', { replace: true });
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Erro ao criar projeto.');
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Erro ao criar projeto.');
     }
   };
 
@@ -452,14 +491,10 @@ export default function ProjectRegistrationForm() {
 
     try {
       await stepSchema[currentStep].parseAsync(values);
-      setIsStepValid(true);
       setCurrentStep((prev) => prev + 1);
     } catch (err) {
-      setIsStepValid(false);
-
       if (err instanceof z.ZodError) {
         const formattedErrors = err.errors.map((e) => {
-          const path = Array.isArray(e.path) ? e.path.join('.') : e.path;
           return `• ${e.message}`;
         });
 
@@ -471,6 +506,7 @@ export default function ProjectRegistrationForm() {
           ),
           duration: 5000,
           dismissible: true,
+          position: 'top-right',
         });
       } else {
         toast.error('Erro inesperado na validação.');
@@ -592,7 +628,24 @@ export default function ProjectRegistrationForm() {
             <FormItem>
               <FormLabel>Início</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input
+                  type="date"
+                  {...field}
+                  onChange={(e) => {
+                    const endDate = form.getValues('fim');
+                    if (new Date(e.target.value) > new Date(endDate)) {
+                      toast.error(
+                        'A data de início não pode ser posterior à data de fim.',
+                        { duration: 3000, position: 'top-right' },
+                      );
+                      return;
+                    } else {
+                      field.onChange(e);
+                      form.clearErrors('inicio');
+                      form.clearErrors('fim');
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -606,7 +659,26 @@ export default function ProjectRegistrationForm() {
             <FormItem>
               <FormLabel>Fim</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input
+                  type="date"
+                  {...field}
+                  onChange={(e) => {
+                    const startDate = form.getValues('inicio');
+                    if (new Date(e.target.value) < new Date(startDate)) {
+                      toast.error(
+                        'A data de fim não pode ser anterior à data de início.',
+                        { duration: 3000, position: 'top-right' },
+                      );
+
+                      return;
+                    } else {
+                      field.onChange(e);
+
+                      form.clearErrors('inicio');
+                      form.clearErrors('fim');
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -675,73 +747,21 @@ export default function ProjectRegistrationForm() {
     <div className="space-y-6">
       <div>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-areas-canvas max-w-5xl mx-auto px-4">
-          {' '}
           {modelCards.map((model) => {
             const Icon = model.icon;
 
             return (
-              <Drawer key={model.id}>
-                <DrawerTrigger asChild>
-                  <Card
-                    className={cn(
-                      `rounded-md p-4 border shadow-sm`,
-                      model.area,
-                      model.color,
-                    )}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${model.color}`}>
-                          <Icon className={cn('h-5 w-5', model.color)} />
-                        </div>
-                        <div>
-                          <CardTitle className="text-sm">
-                            {model.title}
-                          </CardTitle>
-                          <CardDescription className="text-xs">
-                            {model.description}
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                </DrawerTrigger>
-                <DrawerContent className="min-h-[350px] flex flex-col">
-                  <DrawerHeader>
-                    <DrawerTitle>{model.title}</DrawerTitle>
-                    <DrawerDescription>{model.description}</DrawerDescription>
-                  </DrawerHeader>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <Textarea
-                      onChange={(e) =>
-                        form.setValue(
-                          `modelo.${model.id}` as
-                            | `modelo.missao`
-                            | `modelo.visao`
-                            | `modelo.mercado`
-                            | `modelo.publico_alvo`
-                            | `modelo.receita`
-                            | `modelo.proposta_valor`
-                            | `modelo.retencao`,
-                          e.target.value,
-                        )
-                      }
-                      placeholder="Descreva aqui..."
-                      className="flex-1"
-                      value={form.watch(
-                        `modelo.${model.id}` as
-                          | 'modelo.missao'
-                          | 'modelo.visao'
-                          | 'modelo.mercado'
-                          | 'modelo.publico_alvo'
-                          | 'modelo.receita'
-                          | 'modelo.proposta_valor'
-                          | 'modelo.retencao',
-                      )}
-                    />
-                  </div>
-                </DrawerContent>
-              </Drawer>
+              <CanvasDrawer
+                key={model.id}
+                model={{
+                  id: model.id,
+                  title: model.title,
+                  description: model.description,
+                  area: model.area,
+                  color: model.color,
+                }}
+                icon={Icon}
+              />
             );
           })}
         </div>

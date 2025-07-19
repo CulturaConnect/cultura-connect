@@ -21,7 +21,7 @@ export function useCreateProjectMutation() {
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Erro ao criar o projeto.');
+      toast.error(error?.response?.data?.error || 'Erro ao criar o projeto.');
     },
   });
 }
@@ -72,7 +72,7 @@ export function useUpdateProjectMutation() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.message || 'Erro ao atualizar o projeto.',
+        error?.response?.data?.error || 'Erro ao atualizar o projeto.',
       );
     },
   });
