@@ -11,6 +11,10 @@ import { useUpdateProfile } from '@/api/users/users.queries';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { getUserByCpf } from '@/api/users/users.service';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getCompanyUsers } from '@/api/companies/companies.service';
+import { censurarDocumento } from '@/utils/helpers';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function CompanyProfile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -19,10 +23,7 @@ export default function CompanyProfile() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cpfInput, setCpfInput] = useState('');
-  const [searchResult, setSearchResult] = useState<{
-    nome: string;
-    cpf: string;
-  } | null>(null);
+
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<
     { nome: string; cpf: string }[]
@@ -46,6 +47,13 @@ export default function CompanyProfile() {
 
   const { mutateAsync, isPending } = useUpdateProfile();
 
+  const client = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ['company-users', user?.id],
+    queryFn: () => getCompanyUsers(user?.id || ''),
+    enabled: !!user,
+  });
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -66,27 +74,30 @@ export default function CompanyProfile() {
     if (!cpfInput) return;
     setSearchLoading(true);
     try {
+      if (
+        selectedUsers.some((user) => user.cpf === cpfInput.replace(/\D/g, ''))
+      ) {
+        toast.error('Usuário já adicionado.');
+        setSearchLoading(false);
+        return;
+      }
       const u = await getUserByCpf(cpfInput.replace(/\D/g, ''));
-      setSearchResult({
-        nome: (u.nome_completo || u.nome) as string,
-        cpf: u.cpf,
-      });
+      if (!u) {
+        toast.error('Usuário não encontrado.');
+        return;
+      }
+
+      setSelectedUsers((prev) =>
+        prev.some((user) => user.cpf === u.cpf)
+          ? prev
+          : [...prev, { nome: u.nome, cpf: u.cpf }],
+      );
+      setCpfInput('');
     } catch {
       toast.error('Usuário não encontrado.');
-      setSearchResult(null);
     } finally {
       setSearchLoading(false);
     }
-  };
-
-  const handleAddUser = () => {
-    if (!searchResult) return;
-    if (selectedUsers.some((u) => u.cpf === searchResult.cpf)) {
-      toast.error('Usuário já adicionado.');
-      return;
-    }
-    const updated = [...selectedUsers, searchResult];
-    setSelectedUsers(updated);
   };
 
   const handleRemoveUser = (cpf: string) => {
@@ -116,13 +127,15 @@ export default function CompanyProfile() {
     if (imagem) data.append('imagem', imagem);
     const res = await mutateAsync(data);
     if (res) {
+      client.invalidateQueries({
+        queryKey: ['company-users', user?.id],
+      });
       setFormData((prev) => ({
         ...prev,
         senhaAtual: '',
         novaSenha: '',
         confirmarSenha: '',
       }));
-      setSelectedUsers([]);
       setCpfInput('');
       setIsEditing(false);
     }
@@ -149,6 +162,17 @@ export default function CompanyProfile() {
       setPreviewUrl(user.imagemUrl || null);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (data && selectedUsers.length === 0) {
+      setSelectedUsers(
+        data.map((user) => ({
+          nome: user.nome_completo,
+          cpf: user.cpf,
+        })),
+      );
+    }
+  }, [data, selectedUsers.length]);
 
   if (!user) {
     return (
@@ -362,17 +386,10 @@ export default function CompanyProfile() {
                   onClick={handleSearchUser}
                   disabled={searchLoading}
                 >
-                  {searchLoading ? 'Buscando...' : 'Buscar'}
+                  {searchLoading ? 'Buscando...' : 'Adicionar'}
                 </Button>
               </div>
-              {searchResult && (
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-sm">{searchResult.nome}</span>
-                  <Button type="button" size="sm" onClick={handleAddUser}>
-                    Adicionar
-                  </Button>
-                </div>
-              )}
+
               {selectedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {selectedUsers.map((u) => (
@@ -414,7 +431,7 @@ export default function CompanyProfile() {
   }
 
   return (
-    <main className="flex flex-col min-h-screen">
+    <main className="flex flex-col min-h-screen pb-20">
       <div className="w-full flex items-center justify-center p-4 border-b">
         <h1 className="text-lg font-medium">Perfil</h1>
         <div className="w-5" />
@@ -472,6 +489,34 @@ export default function CompanyProfile() {
               <p className="text-xs text-gray-500">Senha</p>
               <p className="text-sm font-medium">••••••</p>
             </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-sm text-gray-600 mb-2">Usuários associados</h3>
+            {data?.length ? (
+              <ul className="space-y-2">
+                {data.map((user) => (
+                  <li
+                    key={user.cpf}
+                    className="flex items-center justify-between p-2 border rounded"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Avatar className="border border-gray-300">
+                        <AvatarImage src={user?.imagem_url} />
+                        <AvatarFallback>
+                          {user.nome_completo.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>
+                        {user.nome_completo} ({censurarDocumento(user.cpf)})
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">Nenhum usuário associado.</p>
+            )}
           </div>
         </div>
         <div className="px-4 mt-8">

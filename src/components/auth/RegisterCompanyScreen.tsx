@@ -128,32 +128,20 @@ export default function RegisterCompanyScreen() {
     setSearchLoading(true);
     try {
       const user = await getUserByCpf(cpfInput.replace(/\D/g, ''));
-      setSearchResult({
-        nome: (user.nome_completo || user.nome) as string,
-        cpf: user.cpf,
-      });
+
+      setSelectedUsers((prev) =>
+        prev.some((u) => u.cpf === user.cpf)
+          ? prev
+          : [...prev, { nome: user.nome, cpf: user.cpf }],
+      );
+
+      setCpfInput('');
     } catch {
       toast.error('Usuário não encontrado.');
       setSearchResult(null);
     } finally {
       setSearchLoading(false);
     }
-  };
-
-  const handleAddUser = () => {
-    if (!searchResult) return;
-    if (selectedUsers.some((u) => u.cpf === searchResult.cpf)) {
-      toast.error('Usuário já adicionado.');
-      return;
-    }
-    const updated = [...selectedUsers, searchResult];
-    setSelectedUsers(updated);
-    formStep2.setValue(
-      'usuariosCpfs',
-      updated.map((u) => u.cpf),
-    );
-    setSearchResult(null);
-    setCpfInput('');
   };
 
   const handleRemoveUser = (cpf: string) => {
@@ -384,17 +372,10 @@ export default function RegisterCompanyScreen() {
                     onClick={handleSearchUser}
                     disabled={searchLoading}
                   >
-                    {searchLoading ? 'Buscando...' : 'Buscar'}
+                    {searchLoading ? 'Buscando...' : 'Adicionar'}
                   </Button>
                 </div>
-                {searchResult && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-sm">{searchResult.nome}</span>
-                    <Button type="button" size="sm" onClick={handleAddUser}>
-                      Adicionar
-                    </Button>
-                  </div>
-                )}
+
                 {selectedUsers.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {selectedUsers.map((user) => (
