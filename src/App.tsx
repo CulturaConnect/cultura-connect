@@ -13,7 +13,7 @@ import Login from './pages/login';
 import SuccessScreen from './components/auth/SuccessScreen';
 import { AuthProvider } from './contexts/auth';
 import NewProject from './pages/new-project';
-import ProfileScreen from './pages/profile';
+import Profile from './pages/profile';
 import ProjectDetails from './pages/project-details';
 import ProjectActivities from './pages/project-activities';
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -56,7 +56,7 @@ const App = () => (
               path="/me"
               element={
                 <PrivateRoute>
-                  <ProfileScreen />
+                  <Profile />
                 </PrivateRoute>
               }
             />

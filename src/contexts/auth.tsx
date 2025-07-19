@@ -11,6 +11,24 @@ import { getToken, setToken, removeToken, isTokenExpired } from '@/utils/auth';
 import { forgotPassword, login } from '@/services/auth';
 import api from '@/lib/api';
 
+function transformApiUser(data: any): AuthUser {
+  return {
+    id: data.id,
+    tipo: data.type || data.tipo,
+    email: data.email,
+    nome: data.nome_completo || data.nome || '',
+    telefone: data.telefone || '',
+    cnpj: data.cnpj || null,
+    isMei: data.is_mei ?? data.isMei ?? false,
+    cpf: data.cpf || null,
+    inscricaoEstadual: data.inscricao_estadual ?? data.inscricaoEstadual ?? null,
+    razaoSocial: data.razao_social ?? data.razaoSocial ?? null,
+    inscricaoMunicipal:
+      data.inscricao_municipal ?? data.inscricaoMunicipal ?? null,
+    imagemUrl: data.imagem_url ?? data.imagemUrl ?? null,
+  };
+}
+
 export interface AuthUser {
   id: string;
   tipo: string;
@@ -48,31 +66,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const storagedToken = getToken();
 
     if (storagedToken && storagedUser && !isTokenExpired(storagedToken)) {
-      const parsetStoragedUser = JSON.parse(storagedUser);
-      const user = parsetStoragedUser.user || parsetStoragedUser;
-      const {
-        type,
-        nome_completo,
-        imagem_url,
-        inscricao_estadual,
-        inscricao_municipal,
-        is_mei,
-        razao_social,
-        ...rest
-      } = user;
-      setUser({
-        ...rest,
-        nome: nome_completo || user.nome || '',
-        tipo: type || parsetStoragedUser.tipo || 'person',
-        imagemUrl: imagem_url || user.imagem_url || null,
-        inscricaoEstadual:
-          inscricao_estadual || user.inscricao_estadual || null,
-        inscricaoMunicipal:
-          inscricao_municipal || user.inscricao_municipal || null,
-
-        isMei: is_mei || user.is_mei || false,
-        razaoSocial: razao_social || user.razao_social || null,
-      });
+      setUser(JSON.parse(storagedUser));
       api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
     } else if (storagedToken) {
       Logout();
@@ -107,29 +101,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   async function Login(userData: object) {
     const response = await login(userData);
-
-    setUser(response.user);
+    const mapped = transformApiUser(response.user);
+    setUser(mapped);
     api.defaults.headers.Authorization = `Bearer ${response.token}`;
-
-    localStorage.setItem('@App:user', JSON.stringify(response.user));
+    localStorage.setItem('@App:user', JSON.stringify(mapped));
     setToken(response.token);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function updateUser(userData: any) {
-    setUser({
-      ...user,
-
-      imagemUrl: userData.imagem_url || user?.imagemUrl || null,
-      inscricaoEstadual:
-        userData.inscricao_estadual || user?.inscricaoEstadual || null,
-      inscricaoMunicipal:
-        userData.inscricao_municipal || user?.inscricaoMunicipal || null,
-      isMei: userData.is_mei || user?.isMei || false,
-      razaoSocial: userData.razao_social || user?.nome || null,
-      telefone: userData.telefone || user?.telefone || '',
-    });
-    localStorage.setItem('@App:user', JSON.stringify(userData));
+    const mapped = transformApiUser({ ...user, ...userData });
+    setUser(mapped);
+    localStorage.setItem('@App:user', JSON.stringify(mapped));
   }
 
   async function forgotPasswordSend(email: string) {
