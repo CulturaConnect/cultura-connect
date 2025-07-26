@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,7 +57,7 @@ export interface ProjectActivity {
   status: string;
   start: string;
   end: string;
-  evidences: string[] | File[];
+  evidences: Array<string | File>;
 }
 
 const statusOptions = [
@@ -105,6 +105,40 @@ const getStatusIcon = (status: string) => {
   }
 };
 
+function EvidencePreview({ evidence }: { evidence: string | File }) {
+  const url = useMemo(
+    () => (typeof evidence === 'string' ? evidence : URL.createObjectURL(evidence)),
+    [evidence],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (typeof evidence !== 'string') {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [evidence, url]);
+
+  const isImage = url.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/i);
+
+  return isImage ? (
+    <img
+      src={url}
+      alt="Evid\u00eancia"
+      className="w-16 h-16 object-cover rounded border"
+    />
+  ) : (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-16 h-16 border rounded flex items-center justify-center text-xs text-blue-600"
+    >
+      Documento
+    </a>
+  );
+}
+
 export default function ProjectActivities() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -129,7 +163,6 @@ export default function ProjectActivities() {
     end: '',
     evidences: [],
   });
-
   console.log(activities);
 
   useEffect(() => {
@@ -148,6 +181,7 @@ export default function ProjectActivities() {
       );
     }
   }, [cronogramaData]);
+
 
   if (isLoading || isCronogramaLoading) {
     return (
@@ -278,7 +312,11 @@ export default function ProjectActivities() {
 
     const evidencias: File[] = [];
     activities.forEach((a) => {
-      a.evidences.forEach((file) => evidencias.push(file));
+      a.evidences.forEach((ev) => {
+        if (ev instanceof File) {
+          evidencias.push(ev);
+        }
+      });
     });
 
     await mutateAsync({
@@ -666,16 +704,25 @@ export default function ProjectActivities() {
                         id="evidences"
                         type="file"
                         multiple
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const files = e.target.files
+                            ? Array.from(e.target.files)
+                            : [];
                           setActivityForm({
                             ...activityForm,
-                            evidences: e.target.files
-                              ? Array.from(e.target.files)
-                              : [],
-                          })
-                        }
+                            evidences: [...activityForm.evidences, ...files],
+                          });
+                          e.target.value = '';
+                        }}
                         className="mt-2 border-slate-200"
                       />
+                      {activityForm.evidences.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {activityForm.evidences.map((ev, idx) => (
+                            <EvidencePreview key={idx} evidence={ev} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <DialogFooter className="pt-6">
@@ -761,34 +808,16 @@ export default function ProjectActivities() {
                               : 'Não definido'}
                           </span>
                         </div>
-                        {(activity?.evidences?.length > 0 ||
-                          activity?.evidences?.length > 0) && (
+                        {activity.evidences.length > 0 && (
                           <div>
                             <p className="text-sm font-medium text-slate-700">
                               Evidências:
                             </p>
-                            <ul className="list-disc list-inside space-y-1">
-                              {activity.evidences.map((url, i) => (
-                                <li key={`url-${i}`}>
-                                  <a
-                                    href={url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 underline"
-                                  >
-                                    Arquivo {i + 1}
-                                  </a>
-                                </li>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {activity.evidences.map((ev, i) => (
+                                <EvidencePreview key={i} evidence={ev} />
                               ))}
-                              {activity.evidences.map((file, i) => (
-                                <li
-                                  key={`file-${i}`}
-                                  className="text-slate-600"
-                                >
-                                  {file.name}
-                                </li>
-                              ))}
-                            </ul>
+                            </div>
                           </div>
                         )}
                       </div>
