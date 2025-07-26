@@ -29,7 +29,6 @@ import {
   useGetProjectByIdQuery,
   useGetProjectCronogramaQuery,
   useUpdateCronogramaMutation,
-  useUpdateProjectMutation,
 } from '@/api/projects/projects.queries';
 import type { Project } from '@/api/projects/types';
 import {
@@ -58,8 +57,7 @@ export interface ProjectActivity {
   status: string;
   start: string;
   end: string;
-  evidences: File[];
-  evidenceUrls: string[];
+  evidences: string[] | File[];
 }
 
 const statusOptions = [
@@ -130,8 +128,9 @@ export default function ProjectActivities() {
     start: '',
     end: '',
     evidences: [],
-    evidenceUrls: [],
   });
+
+  console.log(activities);
 
   useEffect(() => {
     if (cronogramaData) {
@@ -144,8 +143,7 @@ export default function ProjectActivities() {
           status: a.status || 'novo',
           start: a.data_inicio || '',
           end: a.data_fim || '',
-          evidences: [],
-          evidenceUrls: a.evidencias || [],
+          evidences: a.evidencias,
         })),
       );
     }
@@ -186,7 +184,6 @@ export default function ProjectActivities() {
       start: '',
       end: '',
       evidences: [],
-      evidenceUrls: [],
     });
     setDialogOpen(true);
   };
@@ -659,7 +656,10 @@ export default function ProjectActivities() {
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="evidences" className="text-slate-700 font-medium">
+                      <Label
+                        htmlFor="evidences"
+                        className="text-slate-700 font-medium"
+                      >
                         Evidências
                       </Label>
                       <Input
@@ -669,7 +669,9 @@ export default function ProjectActivities() {
                         onChange={(e) =>
                           setActivityForm({
                             ...activityForm,
-                            evidences: e.target.files ? Array.from(e.target.files) : [],
+                            evidences: e.target.files
+                              ? Array.from(e.target.files)
+                              : [],
                           })
                         }
                         className="mt-2 border-slate-200"
@@ -759,11 +761,14 @@ export default function ProjectActivities() {
                               : 'Não definido'}
                           </span>
                         </div>
-                        {(activity.evidenceUrls.length > 0 || activity.evidences.length > 0) && (
+                        {(activity?.evidences?.length > 0 ||
+                          activity?.evidences?.length > 0) && (
                           <div>
-                            <p className="text-sm font-medium text-slate-700">Evidências:</p>
+                            <p className="text-sm font-medium text-slate-700">
+                              Evidências:
+                            </p>
                             <ul className="list-disc list-inside space-y-1">
-                              {activity.evidenceUrls.map((url, i) => (
+                              {activity.evidences.map((url, i) => (
                                 <li key={`url-${i}`}>
                                   <a
                                     href={url}
@@ -776,7 +781,10 @@ export default function ProjectActivities() {
                                 </li>
                               ))}
                               {activity.evidences.map((file, i) => (
-                                <li key={`file-${i}`} className="text-slate-600">
+                                <li
+                                  key={`file-${i}`}
+                                  className="text-slate-600"
+                                >
                                   {file.name}
                                 </li>
                               ))}
