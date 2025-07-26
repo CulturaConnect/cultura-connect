@@ -93,8 +93,8 @@ const cronogramaSchema = z
   .object({
     titulo: z.string().min(1, 'Título é obrigatório'),
     descricao: z.string().min(1, 'Descrição é obrigatória'),
+    acompanhamento: z.string().optional(),
     status: z.string().min(1, 'Status é obrigatório'),
-    orcamento_previsto: z.string().min(1, 'Orçamento é obrigatório'),
     inicio: z.string().min(1, 'Data de início é obrigatória'),
     fim: z.string().min(1, 'Data de fim é obrigatória'),
   })
@@ -325,10 +325,11 @@ export default function ProjectRegistrationForm() {
         {
           titulo: '',
           descricao: '',
+          acompanhamento: '',
           status: '',
-          orcamento_previsto: '',
           inicio: '',
           fim: '',
+          evidencias: [],
         },
       ],
       responsavel_principal_id: '',
@@ -453,10 +454,7 @@ export default function ProjectRegistrationForm() {
       const res = await mutateAsync({
         ...values,
         company_id: user?.id,
-        cronograma_atividades: values.cronograma_atividades.map((item) => ({
-          ...item,
-          orcamento_previsto: Number(item.orcamento_previsto) || 0,
-        })),
+        cronograma_atividades: values.cronograma_atividades,
         orcamento_previsto: Number(values.orcamento_previsto) || 0,
         orcamento_gasto: values.orcamento_gasto
           ? Number(values.orcamento_gasto)
@@ -1208,19 +1206,36 @@ export default function ProjectRegistrationForm() {
                     />
                     <FormField
                       control={form.control}
-                      name={`cronograma_atividades.${index}.orcamento_previsto`}
+                      name={`cronograma_atividades.${index}.acompanhamento`}
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Orçamento Previsto</FormLabel>
+                        <FormItem className="w-full">
+                          <FormLabel>Acompanhamento</FormLabel>
                           <FormControl>
-                            <CurrencyInput
-                              value={field.value}
-                              onValueChange={(value) =>
-                                field.onChange(value ?? '')
+                            <Textarea
+                              {...field}
+                              placeholder="Anotações sobre o andamento"
+                              className="min-h-[80px]"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`cronograma_atividades.${index}.evidencias`}
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Evidências</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="file"
+                              multiple
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.files ? Array.from(e.target.files) : []
+                                )
                               }
-                              onBlur={field.onBlur}
-                              name={field.name}
-                              placeholder="R$ 0,00"
                             />
                           </FormControl>
                           <FormMessage />
@@ -1274,10 +1289,11 @@ export default function ProjectRegistrationForm() {
                   append({
                     titulo: '',
                     descricao: '',
+                    acompanhamento: '',
                     status: '',
-                    orcamento_previsto: '',
                     inicio: '',
                     fim: '',
+                    evidencias: [],
                   })
                 }
               >

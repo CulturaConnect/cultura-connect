@@ -1,5 +1,10 @@
 import api from '@/lib/api';
-import { CreateProject, Project, UpdateProject } from './types';
+import {
+  CreateProject,
+  Project,
+  UpdateProject,
+  CronogramaAtividade,
+} from './types';
 import { BudgetItem } from '@/pages/project-budget';
 
 export async function createProject(data: CreateProject) {
@@ -104,21 +109,21 @@ export async function getProjectCronograma(projectId: string) {
 
 export async function updateCronograma(
   projectId: string,
-  cronograma: {
-    titulo: string;
-    descricao: string;
-    acompanhamento: string;
-    data_inicio: string;
-    data_fim: string;
-    evidencias: string[];
-  }[],
+  cronograma: CronogramaAtividade[],
+  evidencias: File[] = [],
 ) {
+  const formData = new FormData();
+  formData.append('cronograma_atividades', JSON.stringify(cronograma));
+  evidencias.forEach((file, idx) => {
+    formData.append(`evidencias[${idx}]`, file);
+  });
+
   const response = await api.patch(
     `/projects/${projectId}/cronograma`,
-    cronograma,
+    formData,
     {
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'multipart/form-data',
       },
     },
   );

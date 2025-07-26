@@ -10,7 +10,7 @@ import {
   updateProject,
 } from './projects.service';
 import { toast } from 'sonner';
-import { CreateProject, Project } from './types';
+import { CreateProject, Project, CronogramaAtividade } from './types';
 import { useNavigate } from 'react-router-dom';
 import { BudgetItem } from '@/pages/project-budget';
 
@@ -122,8 +122,11 @@ export function useUpdateCronogramaMutation() {
 
   return useMutation({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mutationFn: (data: { projectId: string; cronograma: any[] }) =>
-      updateCronograma(data.projectId, data.cronograma),
+    mutationFn: (data: {
+      projectId: string;
+      cronograma: CronogramaAtividade[];
+      evidencias: File[];
+    }) => updateCronograma(data.projectId, data.cronograma, data.evidencias),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-by-id'] });
       toast.success('Cronograma atualizado com sucesso!');

@@ -54,9 +54,12 @@ export interface ProjectActivity {
   id: string;
   title: string;
   description: string;
+  acompanhamento: string;
   status: string;
   start: string;
   end: string;
+  evidences: File[];
+  evidenceUrls: string[];
 }
 
 const statusOptions = [
@@ -122,9 +125,12 @@ export default function ProjectActivities() {
     id: '',
     title: '',
     description: '',
+    acompanhamento: '',
     status: 'novo',
     start: '',
     end: '',
+    evidences: [],
+    evidenceUrls: [],
   });
 
   useEffect(() => {
@@ -134,9 +140,12 @@ export default function ProjectActivities() {
           id: idx.toString(),
           title: a.titulo || '',
           description: a.descricao || '',
+          acompanhamento: a.acompanhamento || '',
           status: a.status || 'novo',
           start: a.data_inicio || '',
           end: a.data_fim || '',
+          evidences: [],
+          evidenceUrls: a.evidencias || [],
         })),
       );
     }
@@ -172,9 +181,12 @@ export default function ProjectActivities() {
       id: Date.now().toString(),
       title: '',
       description: '',
+      acompanhamento: '',
       status: 'novo',
       start: '',
       end: '',
+      evidences: [],
+      evidenceUrls: [],
     });
     setDialogOpen(true);
   };
@@ -261,16 +273,21 @@ export default function ProjectActivities() {
     const cronograma_atividades = activities.map((a) => ({
       titulo: a.title,
       descricao: a.description,
+      acompanhamento: a.acompanhamento,
       status: a.status,
       data_inicio: a.start,
       data_fim: a.end,
-      acompanhamento: '',
-      evidencias: [],
     }));
+
+    const evidencias: File[] = [];
+    activities.forEach((a) => {
+      a.evidences.forEach((file) => evidencias.push(file));
+    });
 
     await mutateAsync({
       projectId: data?.id || '',
       cronograma: cronograma_atividades,
+      evidencias,
     });
   };
 
@@ -548,6 +565,27 @@ export default function ProjectActivities() {
                       />
                     </div>
                     <div>
+                      <Label
+                        htmlFor="acompanhamento"
+                        className="text-slate-700 font-medium"
+                      >
+                        Acompanhamento
+                      </Label>
+                      <Textarea
+                        id="acompanhamento"
+                        rows={3}
+                        value={activityForm.acompanhamento}
+                        onChange={(e) =>
+                          setActivityForm({
+                            ...activityForm,
+                            acompanhamento: e.target.value,
+                          })
+                        }
+                        className="mt-2 border-slate-200 focus:border-blue-500"
+                        placeholder="Anotações sobre o andamento"
+                      />
+                    </div>
+                    <div>
                       <div>
                         <Label
                           htmlFor="status"
@@ -620,6 +658,23 @@ export default function ProjectActivities() {
                         />
                       </div>
                     </div>
+                    <div>
+                      <Label htmlFor="evidences" className="text-slate-700 font-medium">
+                        Evidências
+                      </Label>
+                      <Input
+                        id="evidences"
+                        type="file"
+                        multiple
+                        onChange={(e) =>
+                          setActivityForm({
+                            ...activityForm,
+                            evidences: e.target.files ? Array.from(e.target.files) : [],
+                          })
+                        }
+                        className="mt-2 border-slate-200"
+                      />
+                    </div>
                   </div>
                   <DialogFooter className="pt-6">
                     <DialogClose asChild>
@@ -667,6 +722,11 @@ export default function ProjectActivities() {
                           <p className="text-slate-600 leading-relaxed">
                             {activity.description}
                           </p>
+                          {activity.acompanhamento && (
+                            <p className="text-slate-500 text-sm mt-2 whitespace-pre-wrap">
+                              {activity.acompanhamento}
+                            </p>
+                          )}
                         </div>
                         <Badge
                           className={`${statusOption?.color} border flex items-center gap-1 px-3 py-1`}
@@ -699,6 +759,30 @@ export default function ProjectActivities() {
                               : 'Não definido'}
                           </span>
                         </div>
+                        {(activity.evidenceUrls.length > 0 || activity.evidences.length > 0) && (
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Evidências:</p>
+                            <ul className="list-disc list-inside space-y-1">
+                              {activity.evidenceUrls.map((url, i) => (
+                                <li key={`url-${i}`}>
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 underline"
+                                  >
+                                    Arquivo {i + 1}
+                                  </a>
+                                </li>
+                              ))}
+                              {activity.evidences.map((file, i) => (
+                                <li key={`file-${i}`} className="text-slate-600">
+                                  {file.name}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
 
