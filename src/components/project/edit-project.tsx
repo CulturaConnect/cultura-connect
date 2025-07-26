@@ -176,88 +176,35 @@ export default function EditProjectTab({
               <DollarSign className="w-5 h-5" />
               Orçamento
             </CardTitle>
-            <CardDescription>
-              Gerencie o orçamento previsto e gasto do projeto
-            </CardDescription>
+            <CardDescription>Visualize um resumo do orçamento</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="budget-planned">Orçamento Previsto (R$)</Label>
+                <Label htmlFor="budget-planned">Orçamento (R$)</Label>
                 <CurrencyInput
                   id="budget-planned"
                   value={budgetPlanned}
-                  onValueChange={(value) => setBudgetPlanned(value || '')}
-                  className="mt-2"
-                  placeholder="R$ 0,00"
+                  disabled
+                  className="mt-2 opacity-70 cursor-not-allowed"
                 />
               </div>
               <div>
-                <Label htmlFor="budget-spent">Orçamento Gasto (R$)</Label>
+                <Label htmlFor="budget-spent">Gasto (R$)</Label>
                 <CurrencyInput
                   id="budget-spent"
                   value={budgetSpent}
-                  onValueChange={(value) => setBudgetSpent(value || '')}
-                  className="mt-2"
-                  placeholder="R$ 0,00"
+                  disabled
+                  className="mt-2 opacity-70 cursor-not-allowed"
                 />
               </div>
             </div>
-            <div className="mt-4 p-4 bg-muted rounded-lg">
-              <div className="flex justify-between items-center text-sm">
-                <span>Orçamento Restante:</span>
-                <span
-                  className={`font-semibold ${
-                    Number.parseFloat(budgetPlanned) -
-                      Number.parseFloat(budgetSpent) >=
-                    0
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                  }`}
-                >
-                  R${' '}
-                  {(() => {
-                    const planned = parseFloat(budgetPlanned);
-                    const spent = parseFloat(budgetSpent);
-
-                    const difference =
-                      isNaN(planned) || isNaN(spent) ? 0 : planned - spent;
-
-                    return difference.toLocaleString('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    });
-                  })()}
-                </span>
-              </div>
-              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${Math.min(
-                      (Number.parseFloat(budgetSpent) /
-                        Number.parseFloat(budgetPlanned)) *
-                        100,
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>R$ 0</span>
-                <span>
-                  {(() => {
-                    const value = parseFloat(budgetPlanned);
-                    return isNaN(value)
-                      ? 'R$ --'
-                      : `R$ ${value.toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`;
-                  })()}{' '}
-                </span>
-              </div>
-            </div>
+            <Button
+              onClick={() => navigate(`/project/${project.id}/budget`)}
+              className="mt-4"
+            >
+              Gerenciar Orçamento
+            </Button>
           </CardContent>
         </Card>
 

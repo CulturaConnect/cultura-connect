@@ -16,6 +16,7 @@ import NewProject from './pages/new-project';
 import Profile from './pages/profile';
 import ProjectDetails from './pages/project-details';
 import ProjectActivities from './pages/project-activities';
+import ProjectBudget from './pages/project-budget';
 import PrivateRoute from './components/auth/PrivateRoute';
 import AdminRoute from './components/auth/AdminRoute';
 import AdminDashboard from './pages/admin-dashboard';
@@ -50,6 +51,10 @@ const App = () => (
             <Route
               path="/project/:projectId/activities"
               element={<ProjectActivities />}
+            />
+            <Route
+              path="/project/:projectId/budget"
+              element={<ProjectBudget />}
             />
 
             <Route

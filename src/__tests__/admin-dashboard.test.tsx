@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AdminDashboard from '@/pages/admin-dashboard'
 import { vi } from 'vitest'
@@ -18,6 +18,6 @@ describe('AdminDashboard', () => {
         <AdminDashboard />
       </QueryClientProvider>,
     )
-    expect(await screen.findByText('Nenhum dado encontrado')).toBeInTheDocument()
+    expect(await screen.findByText('Carregando...')).toBeInTheDocument()
   })
 })

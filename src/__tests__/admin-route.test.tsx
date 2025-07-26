@@ -4,12 +4,14 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import AdminRoute from '@/components/auth/AdminRoute'
 import { vi } from 'vitest'
 
-const mockAuth: { signed: boolean; user: any } = { signed: false, user: null }
+const mockAuth: { signed: boolean; user: unknown } = { signed: false, user: null }
 
 const mockNavigate = vi.fn()
 
 vi.mock('react-router-dom', async () => {
-  const actual: Record<string, any> = await vi.importActual('react-router-dom')
+  const actual: Record<string, unknown> = await vi.importActual(
+    'react-router-dom',
+  )
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
@@ -17,7 +19,7 @@ vi.mock('@/contexts/auth', () => ({
   useAuth: () => mockAuth,
 }))
 
-function renderWithAuth(user: any) {
+function renderWithAuth(user: unknown) {
   mockAuth.signed = !!user
   mockAuth.user = user
 
