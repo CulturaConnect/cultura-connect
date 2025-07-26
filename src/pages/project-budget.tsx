@@ -6,16 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
+  useGetBudgetItemsQuery,
   useGetProjectByIdQuery,
-  useUpdateProjectMutation,
+  useUpdateBudgetItemMutation,
 } from '@/api/projects/projects.queries';
 import type { Project } from '@/api/projects/types';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ArrowRight } from 'lucide-react';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import ReactPaginate from 'react-paginate';
 
-interface BudgetItem {
-  id: string;
+export interface BudgetItem {
+  id?: string;
   description: string;
   quantity: number;
   unit: string;
@@ -28,11 +31,38 @@ export default function ProjectBudget() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { data, isLoading } = useGetProjectByIdQuery(projectId);
-  const { mutateAsync, isPending } = useUpdateProjectMutation();
+
+  const { data: budgetItems = [], isLoading: isLoadingBudgetItems } =
+    useGetBudgetItemsQuery(projectId || '');
+
+  const { mutateAsync, isPending } = useUpdateBudgetItemMutation();
 
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [totalBudget, setTotalBudget] = useState(0);
   const [spentBudget, setSpentBudget] = useState(0);
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 5;
+
+  const pageCount = Math.ceil(items.length / itemsPerPage);
+  const paginatedItems = items.slice(
+    currentPage * itemsPerPage,
+    currentPage * itemsPerPage + itemsPerPage,
+  );
+
+  console.log('Paginated Items:', paginatedItems);
+  console.log('Current Page:', currentPage);
+  console.log('Total Items:', items.length);
+
+  useEffect(() => {
+    setCurrentPage(0); // reset ao adicionar/remover
+  }, [items.length]);
+
+  useEffect(() => {
+    if (budgetItems.length > 0) {
+      setItems(budgetItems);
+    }
+  }, [budgetItems]);
 
   const [form, setForm] = useState({
     description: '',
@@ -51,7 +81,7 @@ export default function ProjectBudget() {
     }
   }, [data]);
 
-  if (isLoading) {
+  if (isLoading || isLoadingBudgetItems) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="text-center">
@@ -70,15 +100,27 @@ export default function ProjectBudget() {
       toast.error('Descrição obrigatória');
       return;
     }
-    const value = Number(form.unitValue);
-    if (isNaN(value)) {
-      toast.error('Valor inválido');
+
+    if (!form.unit.trim()) {
+      toast.error('Unidade obrigatória');
       return;
     }
+
     const qty = Number(form.quantity);
+    if (isNaN(qty) || qty <= 0) {
+      toast.error('Quantidade inválida');
+      return;
+    }
+
+    const value = Number(form.unitValue);
+    if (isNaN(value) || value <= 0) {
+      toast.error('Valor unitário inválido');
+      return;
+    }
+
     const total = qty * value;
+
     const newItem: BudgetItem = {
-      id: Date.now().toString(),
       description: form.description,
       quantity: qty,
       unit: form.unit,
@@ -86,41 +128,79 @@ export default function ProjectBudget() {
       unitValue: value,
       adjustTotal: form.adjustTotal,
     };
+
     setItems([...items, newItem]);
+
     if (form.adjustTotal) {
       setTotalBudget((prev) => prev + total);
     }
-    setForm({ description: '', quantity: 1, unit: '', unitQty: 1, unitValue: '', adjustTotal: false });
+
+    setForm({
+      description: '',
+      quantity: 1,
+      unit: '',
+      unitQty: 1,
+      unitValue: '',
+      adjustTotal: false,
+    });
   };
 
-  const removeItem = (id: string) => {
-    const item = items.find((i) => i.id === id);
+  const removeItem = (index: number) => {
+    const item = items[index];
     if (item) {
       if (item.adjustTotal) {
         setTotalBudget((prev) => prev - item.quantity * item.unitValue);
       }
-      setItems(items.filter((i) => i.id !== id));
+      setItems(items.filter((_, idx) => idx !== index));
     }
   };
 
   const handleSave = async () => {
     await mutateAsync({
       projectId: data?.id || '',
-      projectData: { orcamento_previsto: totalBudget, orcamento_gasto: spentBudget } as Project,
+      data: items.map((item) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unit: item.unit,
+        unitQty: item.unitQty,
+        unitValue: item.unitValue,
+        adjustTotal: item.adjustTotal,
+      })),
     });
   };
+
+  const unitValue = Number(form.unitValue);
+  const quantity = Number(form.quantity);
+  const subtotal =
+    !isNaN(unitValue) && !isNaN(quantity) ? unitValue * quantity : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10 shadow-sm">
         <div className="p-4 sm:p-6 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="hover:bg-slate-100">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="hover:bg-slate-100"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
-          <h1 className="text-xl font-bold text-slate-900">Gerenciar Orçamento</h1>
-          <Button onClick={handleSave} disabled={isPending} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg">
-            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Salvar
+          <h1 className="text-xl font-bold text-slate-900">
+            Gerenciar Orçamento
+          </h1>
+          <Button
+            onClick={handleSave}
+            disabled={isPending}
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+          >
+            {isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Salvar
           </Button>
         </div>
       </div>
@@ -148,68 +228,179 @@ export default function ProjectBudget() {
               <CardTitle>Orçamento Restante</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p className={`text-2xl font-bold ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>R$ {remainingBudget.toLocaleString('pt-BR')}</p>
+              <p
+                className={`text-2xl font-bold ${
+                  remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}
+              >
+                R$ {remainingBudget.toLocaleString('pt-BR')}
+              </p>
               <Progress value={usagePercent} className="h-2" />
             </CardContent>
           </Card>
         </div>
 
         <div className="flex justify-between bg-white/70 backdrop-blur-sm p-4 rounded-md shadow">
-          <div>Total: R$ {totalBudget.toLocaleString('pt-BR')}</div>
-          <div>Gasto: R$ {spentBudget.toLocaleString('pt-BR')}</div>
-          <div>Restante: R$ {remainingBudget.toLocaleString('pt-BR')}</div>
+          <div>
+            <h4 className="text-lg font-semibold text-slate-800">
+              Resumo do Orçamento
+            </h4>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Badge>Total: R$ {totalBudget.toLocaleString('pt-BR')}</Badge>
+            <Badge>Gasto: R$ {spentBudget.toLocaleString('pt-BR')}</Badge>
+            <Badge variant={remainingBudget >= 0 ? 'secondary' : 'destructive'}>
+              Restante: R$ {remainingBudget.toLocaleString('pt-BR')}
+            </Badge>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 bg-white/70 backdrop-blur-sm p-4 rounded-md shadow">
           <div className="grid md:grid-cols-5 gap-4 items-end">
             <div className="md:col-span-2">
               <Label htmlFor="desc">Descrição</Label>
-              <Input id="desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-2" />
+              <Input
+                id="desc"
+                value={form.description}
+                placeholder='Ex: "Material de escritório", "Serviços de limpeza"'
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                className="mt-2"
+              />
             </div>
             <div>
               <Label htmlFor="qty">Quantidade</Label>
-              <Input id="qty" type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} className="mt-2" />
+              <Input
+                id="qty"
+                type="number"
+                value={form.quantity}
+                placeholder='Ex: "10", "5.5"'
+                onChange={(e) =>
+                  setForm({ ...form, quantity: Number(e.target.value) })
+                }
+                className="mt-2"
+              />
             </div>
             <div>
               <Label htmlFor="unit">Unidade</Label>
-              <Input id="unit" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="mt-2" />
+              <Input
+                id="unit"
+                value={form.unit}
+                placeholder='Ex: "kg", "un", "m²"'
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                className="mt-2"
+              />
             </div>
             <div>
               <Label htmlFor="unitValue">Valor Unitário</Label>
-              <CurrencyInput id="unitValue" value={form.unitValue} onValueChange={(v) => setForm({ ...form, unitValue: v || '' })} className="mt-2" />
+              <CurrencyInput
+                id="unitValue"
+                value={form.unitValue}
+                placeholder="R$ 0,00"
+                onValueChange={(v) => setForm({ ...form, unitValue: v || '' })}
+                className="mt-2"
+              />
             </div>
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <input id="adjust" type="checkbox" checked={form.adjustTotal} onChange={(e) => setForm({ ...form, adjustTotal: e.target.checked })} className="mr-2" />
+            <input
+              id="adjust"
+              type="checkbox"
+              checked={form.adjustTotal}
+              onChange={(e) =>
+                setForm({ ...form, adjustTotal: e.target.checked })
+              }
+              className="mr-2"
+            />
             <Label htmlFor="adjust">Ajustar orçamento total</Label>
           </div>
-          <Button onClick={handleAddItem} className="mt-2">Adicionar Item</Button>
+
+          <div className="flex justify-end flex-col">
+            {subtotal > 0 && (
+              <p className="text-right text-md text-slate-700 font-medium">
+                Subtotal:{' '}
+                <span className="text-green-600 font-semibold">
+                  R$ {subtotal.toLocaleString('pt-BR')}
+                </span>
+              </p>
+            )}
+
+            <Button
+              onClick={handleAddItem}
+              className="w-40"
+              variant="secondary"
+            >
+              Adicionar Item
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          {items.map((item) => (
-            <Card key={item.id} className="shadow border-0">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{item.description}</p>
-                  <p className="text-sm text-slate-600">
-                    {item.quantity} {item.unit} x R$ {item.unitValue.toLocaleString('pt-BR')}
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => removeItem(item.id)}>
-                  Remover
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-          {items.length === 0 && (
-            <Card className="shadow border-0">
-              <CardContent className="p-4 text-center text-slate-600">
-                Nenhum item adicionado
-              </CardContent>
-            </Card>
-          )}
+        <div className="overflow-auto rounded-md shadow border border-slate-200">
+          <table className="min-w-full bg-white text-sm text-slate-700">
+            <thead className="bg-slate-100 border-b border-slate-200">
+              <tr>
+                <th className="text-left p-3 font-semibold">Descrição</th>
+                <th className="text-left p-3 font-semibold">Qtd.</th>
+                <th className="text-left p-3 font-semibold">Unidade</th>
+                <th className="text-left p-3 font-semibold">Valor Unit.</th>
+                <th className="text-left p-3 font-semibold">Subtotal</th>
+                <th className="text-right p-3 font-semibold">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedItems.length > 0 ? (
+                paginatedItems.map((item, idx) => (
+                  <tr key={item.id || idx} className="border-b last:border-0">
+                    <td className="p-3">{item.description}</td>
+                    <td className="p-3">{item.quantity}</td>
+                    <td className="p-3">{item.unit}</td>
+                    <td className="p-3">
+                      R$ {item.unitValue.toLocaleString('pt-BR')}
+                    </td>
+                    <td className="p-3">
+                      R${' '}
+                      {(item.quantity * item.unitValue).toLocaleString('pt-BR')}
+                    </td>
+                    <td className="p-3 text-right">
+                      <Button
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                        size="sm"
+                        onClick={() => removeItem(idx)}
+                      >
+                        Remover
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="text-center text-slate-500 py-4">
+                    Nenhum item adicionado
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
+
+        {pageCount > 1 && (
+          <ReactPaginate
+            previousLabel={<ArrowLeft className="w-4 h-4" />}
+            nextLabel={<ArrowRight className="w-4 h-4" />}
+            breakLabel={'...'}
+            pageCount={pageCount}
+            onPageChange={(selected) => setCurrentPage(selected.selected)}
+            containerClassName="flex justify-center mt-4 gap-2"
+            pageClassName="px-3 py-1 border rounded-md text-sm text-slate-700 hover:bg-slate-100"
+            activeClassName="bg-blue-600 text-white"
+            previousClassName="px-3 py-1 text-sm hover:bg-slate-100"
+            nextClassName="px-3 py-1 text-sm hover:bg-slate-100"
+            disabledClassName="opacity-50 cursor-not-allowed"
+          />
+        )}
       </div>
     </div>
   );

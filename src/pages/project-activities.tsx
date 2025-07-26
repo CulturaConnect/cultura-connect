@@ -27,6 +27,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import {
   useGetProjectByIdQuery,
+  useGetProjectCronogramaQuery,
+  useUpdateCronogramaMutation,
   useUpdateProjectMutation,
 } from '@/api/projects/projects.queries';
 import type { Project } from '@/api/projects/types';
@@ -46,15 +48,13 @@ import {
   Target,
   Loader2,
 } from 'lucide-react';
-import { CurrencyInput } from '@/components/ui/currency-input';
 import { toast } from 'sonner';
 
-interface ProjectActivity {
+export interface ProjectActivity {
   id: string;
   title: string;
   description: string;
   status: string;
-  budget: number;
   start: string;
   end: string;
 }
@@ -108,7 +108,10 @@ export default function ProjectActivities() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { data, isLoading } = useGetProjectByIdQuery(projectId);
-  const { mutateAsync, isPending } = useUpdateProjectMutation();
+  const { data: cronogramaData, isLoading: isCronogramaLoading } =
+    useGetProjectCronogramaQuery(projectId);
+
+  const { mutateAsync, isPending } = useUpdateCronogramaMutation();
 
   const [activities, setActivities] = useState<ProjectActivity[]>([]);
   const [search, setSearch] = useState('');
@@ -120,28 +123,26 @@ export default function ProjectActivities() {
     title: '',
     description: '',
     status: 'novo',
-    budget: 0,
     start: '',
     end: '',
   });
 
   useEffect(() => {
-    if (data) {
+    if (cronogramaData) {
       setActivities(
-        data.cronograma_atividades.map((a, idx) => ({
+        cronogramaData.map((a, idx) => ({
           id: idx.toString(),
           title: a.titulo || '',
           description: a.descricao || '',
           status: a.status || 'novo',
-          budget: a.orcamento_previsto || 0,
-          start: a.inicio || '',
-          end: a.fim || '',
+          start: a.data_inicio || '',
+          end: a.data_fim || '',
         })),
       );
     }
-  }, [data]);
+  }, [cronogramaData]);
 
-  if (isLoading) {
+  if (isLoading || isCronogramaLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="text-center">
@@ -155,16 +156,9 @@ export default function ProjectActivities() {
   const totalActivities = activities.length;
   const inProgress = activities.filter((a) => a.status === 'andamento').length;
   const concluded = activities.filter((a) => a.status === 'concluido').length;
-  const delayed = activities.filter((a) => a.status === 'atrasado').length;
-  const totalBudget = (data as Project).orcamento_previsto;
-  const totalSpent = activities.reduce(
-    (acc, a) => acc + Number(a.budget || 0),
-    0,
-  );
+
   const progressPercentage =
     totalActivities > 0 ? (concluded / totalActivities) * 100 : 0;
-  const budgetUsagePercentage =
-    totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   const filteredActivities = activities.filter((a) => {
     const matchesSearch = a.title.toLowerCase().includes(search.toLowerCase());
@@ -179,7 +173,6 @@ export default function ProjectActivities() {
       title: '',
       description: '',
       status: 'novo',
-      budget: 0,
       start: '',
       end: '',
     });
@@ -193,15 +186,19 @@ export default function ProjectActivities() {
     setDialogOpen(true);
   };
 
+  const parseLocalDate = (str: string) => {
+    const [year, month, day] = str.split('-').map(Number);
+    return new Date(year, month - 1, day); // ← aqui ele assume horário local
+  };
+
   const handleDialogSave = () => {
-    const { title, description, status, budget, start, end } = activityForm;
+    const { title, description, status, start, end } = activityForm;
 
     const missingFields = [];
 
     if (!title.trim()) missingFields.push('Título');
     if (!description.trim()) missingFields.push('Descrição');
     if (!status.trim()) missingFields.push('Status');
-    if (!budget || isNaN(budget)) missingFields.push('Orçamento');
     if (!start) missingFields.push('Data de Início');
     if (!end) missingFields.push('Data de Término');
 
@@ -213,12 +210,19 @@ export default function ProjectActivities() {
       return;
     }
 
-    const startDate = new Date(start);
-    const endDate = new Date(end);
+    const startDate = parseLocalDate(start);
+    const endDate = parseLocalDate(end);
     const projectStart = new Date(data?.inicio);
     const projectEnd = new Date(data?.fim);
 
-    if (startDate < projectStart || endDate > projectEnd) {
+    const toDateOnly = (date: Date) =>
+      new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const isOutsideProjectRange =
+      toDateOnly(startDate) < toDateOnly(projectStart) ||
+      toDateOnly(endDate) > toDateOnly(projectEnd);
+
+    if (isOutsideProjectRange) {
       toast.error('Datas fora do período do projeto', {
         description: `A atividade deve estar entre ${projectStart.toLocaleDateString(
           'pt-BR',
@@ -254,17 +258,20 @@ export default function ProjectActivities() {
   };
 
   const handleSave = async () => {
-    const payload = {
-      cronograma_atividades: activities.map((a) => ({
-        titulo: a.title,
-        descricao: a.description,
-        status: a.status,
-        orcamento_previsto: a.budget,
-        inicio: a.start,
-        fim: a.end,
-      })),
-    } as Project;
-    await mutateAsync({ projectId: data?.id || '', projectData: payload });
+    const cronograma_atividades = activities.map((a) => ({
+      titulo: a.title,
+      descricao: a.description,
+      status: a.status,
+      data_inicio: a.start,
+      data_fim: a.end,
+      acompanhamento: '',
+      evidencias: [],
+    }));
+
+    await mutateAsync({
+      projectId: data?.id || '',
+      cronograma: cronograma_atividades,
+    });
   };
 
   return (
@@ -407,42 +414,7 @@ export default function ProjectActivities() {
           </Card>
         </div>
 
-        {/* Budget Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-slate-800">
-                <DollarSign className="w-5 h-5 text-green-600" />
-                Visão Geral do Orçamento
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600">Orçamento Total</span>
-                <span className="font-bold text-lg text-slate-900">
-                  R$ {totalBudget.toLocaleString('pt-BR')}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600">Total Gasto</span>
-                <span className="font-bold text-lg text-slate-900">
-                  R$ {totalSpent.toLocaleString('pt-BR')}
-                </span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">
-                    Utilização do Orçamento
-                  </span>
-                  <span className="font-medium">
-                    {Math.round(budgetUsagePercentage)}%
-                  </span>
-                </div>
-                <Progress value={budgetUsagePercentage} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-slate-800">
@@ -575,7 +547,7 @@ export default function ProjectActivities() {
                         placeholder="Descreva os detalhes da atividade"
                       />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
                       <div>
                         <Label
                           htmlFor="status"
@@ -604,26 +576,8 @@ export default function ProjectActivities() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div>
-                        <Label
-                          htmlFor="budget"
-                          className="text-slate-700 font-medium"
-                        >
-                          Orçamento (R$)
-                        </Label>
-                        <CurrencyInput
-                          id="budget"
-                          value={activityForm.budget}
-                          onValueChange={(e) =>
-                            setActivityForm({
-                              ...activityForm,
-                              budget: Number(e.replace(',', '.')) || 0,
-                            })
-                          }
-                          className="mt-2 border-slate-200 focus:border-blue-500"
-                          placeholder="0,00"
-                        />
-                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label
                           htmlFor="start"
@@ -644,6 +598,7 @@ export default function ProjectActivities() {
                           className="mt-2 border-slate-200 focus:border-blue-500"
                         />
                       </div>
+
                       <div>
                         <Label
                           htmlFor="end"
@@ -723,20 +678,13 @@ export default function ProjectActivities() {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-100">
                         <div className="flex items-center gap-2 text-slate-600">
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          <span className="text-sm">Orçamento:</span>
-                          <span className="font-semibold text-slate-900">
-                            R$ {Number(activity.budget).toLocaleString('pt-BR')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-600">
                           <Calendar className="w-4 h-4 text-blue-600" />
                           <span className="text-sm">Início:</span>
                           <span className="font-semibold text-slate-900">
                             {activity.start
-                              ? new Date(activity.start).toLocaleDateString(
-                                  'pt-BR',
-                                )
+                              ? parseLocalDate(
+                                  activity.start,
+                                ).toLocaleDateString('pt-BR')
                               : 'Não definido'}
                           </span>
                         </div>
@@ -745,7 +693,7 @@ export default function ProjectActivities() {
                           <span className="text-sm">Término:</span>
                           <span className="font-semibold text-slate-900">
                             {activity.end
-                              ? new Date(activity.end).toLocaleDateString(
+                              ? parseLocalDate(activity.end).toLocaleDateString(
                                   'pt-BR',
                                 )
                               : 'Não definido'}

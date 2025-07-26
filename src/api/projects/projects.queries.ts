@@ -1,13 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createProject,
+  getProjectBudgetItems,
   getProjectById,
+  getProjectCronograma,
   getProjects,
+  updateBudgetItems,
+  updateCronograma,
   updateProject,
 } from './projects.service';
 import { toast } from 'sonner';
 import { CreateProject, Project } from './types';
 import { useNavigate } from 'react-router-dom';
+import { BudgetItem } from '@/pages/project-budget';
 
 export function useCreateProjectMutation() {
   const queryClient = useQueryClient();
@@ -73,6 +78,60 @@ export function useUpdateProjectMutation() {
     onError: (error: any) => {
       toast.error(
         error?.response?.data?.error || 'Erro ao atualizar o projeto.',
+      );
+    },
+  });
+}
+
+export function useGetBudgetItemsQuery(projectId: string) {
+  return useQuery({
+    queryKey: ['budget-items', projectId],
+    queryFn: async () => getProjectBudgetItems(projectId),
+    enabled: !!projectId,
+  });
+}
+
+export function useUpdateBudgetItemMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectId: string; data: BudgetItem[] }) =>
+      updateBudgetItems(data.projectId, data.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budget-items'] });
+      queryClient.invalidateQueries({ queryKey: ['project-by-id'] });
+      toast.success('Item do orçamento atualizado com sucesso!');
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error || 'Erro ao atualizar o item.');
+    },
+  });
+}
+
+export function useGetProjectCronogramaQuery(projectId: string) {
+  return useQuery({
+    queryKey: ['project-cronograma', projectId],
+    queryFn: async () => getProjectCronograma(projectId),
+    enabled: !!projectId,
+  });
+}
+
+export function useUpdateCronogramaMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: (data: { projectId: string; cronograma: any[] }) =>
+      updateCronograma(data.projectId, data.cronograma),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-by-id'] });
+      toast.success('Cronograma atualizado com sucesso!');
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.error || 'Erro ao atualizar o cronograma.',
       );
     },
   });

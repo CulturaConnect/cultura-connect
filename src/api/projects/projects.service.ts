@@ -1,5 +1,6 @@
 import api from '@/lib/api';
 import { CreateProject, Project, UpdateProject } from './types';
+import { BudgetItem } from '@/pages/project-budget';
 
 export async function createProject(data: CreateProject) {
   const formData = new FormData();
@@ -24,8 +25,18 @@ export async function createProject(data: CreateProject) {
   formData.append('resumo', data.resumo ?? '');
   formData.append('objetivos_gerais', data.objetivos_gerais ?? '');
   formData.append('metas', data.metas ?? '');
-  formData.append('orcamento_previsto', data.orcamento_previsto ?? '');
-  formData.append('orcamento_gasto', data.orcamento_gasto ?? '');
+  formData.append(
+    'orcamento_previsto',
+    data.orcamento_previsto !== undefined && data.orcamento_previsto !== null
+      ? String(data.orcamento_previsto)
+      : '',
+  );
+  formData.append(
+    'orcamento_gasto',
+    data.orcamento_gasto !== undefined && data.orcamento_gasto !== null
+      ? String(data.orcamento_gasto)
+      : '',
+  );
   formData.append('is_public', String(data.is_public ?? true));
   if (data.responsavel_principal_id) {
     formData.append('responsavel_principal_id', data.responsavel_principal_id);
@@ -63,6 +74,54 @@ export async function updateProject(projectId: string, data: UpdateProject) {
       'Content-Type': 'application/json',
     },
   });
+
+  return response.data;
+}
+
+export async function getProjectBudgetItems(projectId: string) {
+  const response = await api.get(`/projects/${projectId}/budget-items`);
+  return response.data;
+}
+
+export async function updateBudgetItems(projectId: string, data: BudgetItem[]) {
+  const response = await api.patch(
+    `/projects/${projectId}/budget-items`,
+    data,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+
+  return response.data;
+}
+
+export async function getProjectCronograma(projectId: string) {
+  const response = await api.get(`/projects/${projectId}/cronograma`);
+  return response.data;
+}
+
+export async function updateCronograma(
+  projectId: string,
+  cronograma: {
+    titulo: string;
+    descricao: string;
+    acompanhamento: string;
+    data_inicio: string;
+    data_fim: string;
+    evidencias: string[];
+  }[],
+) {
+  const response = await api.patch(
+    `/projects/${projectId}/cronograma`,
+    cronograma,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  );
 
   return response.data;
 }
