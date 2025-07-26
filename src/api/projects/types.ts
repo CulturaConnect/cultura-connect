@@ -51,10 +51,11 @@ export interface AreasExecucao {
 export interface CronogramaAtividade {
   titulo?: string;
   descricao?: string;
+  acompanhamento?: string;
   status?: string;
-  orcamento_previsto?: number;
   inicio?: string;
   fim?: string;
+  evidencias?: string[];
 }
 
 export interface Equipe {
