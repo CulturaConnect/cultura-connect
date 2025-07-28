@@ -121,6 +121,17 @@ export async function updateCronograma(projectId: string, formData: FormData) {
   return response.data;
 }
 
+export async function changeProjectVisibility(
+  projectId: string,
+  isPublic: boolean,
+) {
+  const response = await api.patch(`/projects/${projectId}/visibilidade`, {
+    isPublic,
+  });
+
+  return response.data;
+}
+
 export async function deleteProject(projectId: string) {
   const response = await api.delete(`/projects/${projectId}`);
   return response.data;

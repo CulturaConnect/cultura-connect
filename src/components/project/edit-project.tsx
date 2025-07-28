@@ -19,16 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import {
-  Trash2,
-  Save,
-  DollarSign,
-  Activity,
-  Loader2,
-} from 'lucide-react';
+import { Trash2, Save, DollarSign, Activity, Loader2 } from 'lucide-react';
 import {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
+  useChangeProjectVisibilityMutation,
 } from '@/api/projects/projects.queries';
 import { Project } from '@/api/projects/types';
 import { CurrencyInput } from '../ui/currency-input';
@@ -86,10 +81,10 @@ export default function EditProjectTab({
   const [projectStatus, setProjectStatus] = useState(project.status || 'novo');
   const navigate = useNavigate();
   const [budgetSpent, setBudgetSpent] = useState(
-    project.orcamento_gasto.toString() || '0',
+    project.orcamento_gasto?.toString() || '0',
   );
   const [budgetPlanned, setBudgetPlanned] = useState(
-    project.orcamento_previsto.toString() || '0',
+    project.orcamento_previsto?.toString() || '0',
   );
   const [isPublic, setIsPublic] = useState(project.is_public);
 
@@ -97,6 +92,9 @@ export default function EditProjectTab({
     useDeleteProjectMutation();
 
   const { mutateAsync, isPending } = useUpdateProjectMutation();
+
+  const { mutateAsync: changeVisibility, isPending: isChangingVisibility } =
+    useChangeProjectVisibilityMutation();
 
   const getStatusBadge = (status: string) => {
     const statusOption = statusOptions.find(
@@ -120,6 +118,17 @@ export default function EditProjectTab({
 
     if (res) {
       setInitialTab('details');
+    }
+  };
+
+  const handleVisibilityChange = async () => {
+    const res = await changeVisibility({
+      projectId: project.id,
+      isPublic: !isPublic,
+    });
+
+    if (res) {
+      setIsPublic(!isPublic);
     }
   };
 
@@ -244,7 +253,11 @@ export default function EditProjectTab({
           <CardContent>
             <div className="flex items-center justify-between">
               <span>{isPublic ? 'Público' : 'Privado'}</span>
-              <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+              <Switch
+                checked={isPublic}
+                onCheckedChange={handleVisibilityChange}
+                disabled={isChangingVisibility}
+              />
             </div>
           </CardContent>
         </Card>

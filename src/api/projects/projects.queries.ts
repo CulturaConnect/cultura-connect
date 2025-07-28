@@ -9,6 +9,7 @@ import {
   updateCronograma,
   updateProject,
   deleteProject,
+  changeProjectVisibility,
 } from './projects.service';
 import { toast } from 'sonner';
 import { CreateProject, Project, CronogramaAtividade } from './types';
@@ -133,6 +134,27 @@ export function useUpdateCronogramaMutation() {
     onError: (error: any) => {
       toast.error(
         error?.response?.data?.error || 'Erro ao atualizar o cronograma.',
+      );
+    },
+  });
+}
+
+export function useChangeProjectVisibilityMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectId: string; isPublic: boolean }) =>
+      changeProjectVisibility(data.projectId, data.isPublic),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-by-id'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Visibilidade do projeto atualizada com sucesso!');
+      return true;
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.error || 'Erro ao atualizar a visibilidade.',
       );
     },
   });

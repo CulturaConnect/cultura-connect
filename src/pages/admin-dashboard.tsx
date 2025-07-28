@@ -99,7 +99,7 @@ export default function AdminDashboard() {
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={metrics.projectsByStatus}>
-              <XAxis dataKey="name" />
+              <XAxis dataKey="status" />
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Bar dataKey="count" fill="#0ea5e9" />

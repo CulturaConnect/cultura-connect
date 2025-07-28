@@ -216,7 +216,8 @@ export default function ProjectRegistrationForm() {
       .refine(
         (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
         'Formato de imagem inválido. Use PNG, JPG, JPEG ou SVG.',
-      ),
+      )
+      .optional(),
 
     modelo: modeloSchema,
 
@@ -238,9 +239,7 @@ export default function ProjectRegistrationForm() {
       .array(cronogramaSchema)
       .min(1, 'É necessário adicionar pelo menos uma atividade ao cronograma.'),
 
-    orcamento_previsto: z
-      .string({ required_error: 'O orçamento previsto é obrigatório.' })
-      .min(1, 'O orçamento previsto é obrigatório.'),
+    orcamento_previsto: z.string().optional(),
 
     orcamento_gasto: z.string().optional(),
 
@@ -340,6 +339,8 @@ export default function ProjectRegistrationForm() {
       responsavel_legal_id: '',
     },
   });
+
+  console.log(form.formState.errors);
 
   const imageFile = form.watch('imagem');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
