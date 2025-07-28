@@ -8,6 +8,7 @@ import {
   updateBudgetItems,
   updateCronograma,
   updateProject,
+  deleteProject,
 } from './projects.service';
 import { toast } from 'sonner';
 import { CreateProject, Project, CronogramaAtividade } from './types';
@@ -133,6 +134,25 @@ export function useUpdateCronogramaMutation() {
       toast.error(
         error?.response?.data?.error || 'Erro ao atualizar o cronograma.',
       );
+    },
+  });
+}
+
+export function useDeleteProjectMutation() {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  return useMutation({
+    mutationFn: (projectId: string) => deleteProject(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Projeto excluído com sucesso!');
+      navigate('/');
+      return true;
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error || 'Erro ao excluir o projeto.');
     },
   });
 }

@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -19,19 +18,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
   Trash2,
-  Plus,
   Save,
   DollarSign,
   Activity,
   Loader2,
 } from 'lucide-react';
-import { useUpdateProjectMutation } from '@/api/projects/projects.queries';
-import { CreateProject, Project } from '@/api/projects/types';
+import {
+  useUpdateProjectMutation,
+  useDeleteProjectMutation,
+} from '@/api/projects/projects.queries';
+import { Project } from '@/api/projects/types';
 import { CurrencyInput } from '../ui/currency-input';
+import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Globe } from 'lucide-react';
 
 interface ProjectActivity {
   id: string;
@@ -78,6 +91,10 @@ export default function EditProjectTab({
   const [budgetPlanned, setBudgetPlanned] = useState(
     project.orcamento_previsto.toString() || '0',
   );
+  const [isPublic, setIsPublic] = useState(project.is_public);
+
+  const { mutateAsync: deleteProject, isPending: isDeleting } =
+    useDeleteProjectMutation();
 
   const { mutateAsync, isPending } = useUpdateProjectMutation();
 
@@ -93,6 +110,7 @@ export default function EditProjectTab({
       orcamento_gasto: Number(budgetSpent),
       orcamento_previsto: Number(budgetPlanned),
       status: projectStatus,
+      is_public: isPublic,
     };
 
     const res = await mutateAsync({
@@ -103,6 +121,10 @@ export default function EditProjectTab({
     if (res) {
       setInitialTab('details');
     }
+  };
+
+  const handleDelete = async () => {
+    await deleteProject(project.id);
   };
 
   return (
@@ -208,6 +230,25 @@ export default function EditProjectTab({
           </CardContent>
         </Card>
 
+        {/* Visibilidade */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5" />
+              Visibilidade
+            </CardTitle>
+            <CardDescription>
+              Defina se o projeto é público ou privado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <span>{isPublic ? 'Público' : 'Privado'}</span>
+              <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Atividades */}
         <Card>
           <CardHeader>
@@ -223,6 +264,44 @@ export default function EditProjectTab({
             >
               Gerenciar Atividades
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Excluir Projeto */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Excluir Projeto
+            </CardTitle>
+            <CardDescription>Essa ação não poderá ser desfeita</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isDeleting}>
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Excluir Projeto'
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação removerá permanentemente o projeto.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
       </div>
