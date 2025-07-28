@@ -93,7 +93,6 @@ const cronogramaSchema = z
   .object({
     titulo: z.string().min(1, 'Título é obrigatório'),
     descricao: z.string().min(1, 'Descrição é obrigatória'),
-    acompanhamento: z.string().optional(),
     status: z.string().min(1, 'Status é obrigatório'),
     inicio: z.string().min(1, 'Data de início é obrigatória'),
     fim: z.string().min(1, 'Data de fim é obrigatória'),
@@ -325,11 +324,9 @@ export default function ProjectRegistrationForm() {
         {
           titulo: '',
           descricao: '',
-          acompanhamento: '',
           status: '',
           inicio: '',
           fim: '',
-          evidencias: [],
         },
       ],
       responsavel_principal_id: '',
@@ -454,7 +451,12 @@ export default function ProjectRegistrationForm() {
       const res = await mutateAsync({
         ...values,
         company_id: user?.id,
-        cronograma_atividades: values.cronograma_atividades,
+        cronograma_atividades: values.cronograma_atividades.map((activity) => ({
+          ...activity,
+          acompanhamento: '',
+          evidencias: [],
+        })),
+
         orcamento_previsto: Number(values.orcamento_previsto) || 0,
         orcamento_gasto: values.orcamento_gasto
           ? Number(values.orcamento_gasto)
@@ -1172,19 +1174,19 @@ export default function ProjectRegistrationForm() {
                     )}
                   />
 
-                  <div className="grid grid-cols-2 gap-4 w-full">
+                  <div className="w-full">
                     <FormField
                       control={form.control}
                       name={`cronograma_atividades.${index}.status`}
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="w-full">
                           <FormLabel>Status</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Selecione" />
                               </SelectTrigger>
                             </FormControl>
@@ -1204,44 +1206,9 @@ export default function ProjectRegistrationForm() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name={`cronograma_atividades.${index}.acompanhamento`}
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Acompanhamento</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder="Anotações sobre o andamento"
-                              className="min-h-[80px]"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`cronograma_atividades.${index}.evidencias`}
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Evidências</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="file"
-                              multiple
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.files ? Array.from(e.target.files) : []
-                                )
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 w-full">
                     <FormField
                       control={form.control}
                       name={`cronograma_atividades.${index}.inicio`}
@@ -1289,11 +1256,9 @@ export default function ProjectRegistrationForm() {
                   append({
                     titulo: '',
                     descricao: '',
-                    acompanhamento: '',
                     status: '',
                     inicio: '',
                     fim: '',
-                    evidencias: [],
                   })
                 }
               >

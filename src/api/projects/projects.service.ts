@@ -107,17 +107,7 @@ export async function getProjectCronograma(projectId: string) {
   return response.data;
 }
 
-export async function updateCronograma(
-  projectId: string,
-  cronograma: CronogramaAtividade[],
-  evidencias: File[] = [],
-) {
-  const formData = new FormData();
-  formData.append('cronograma_atividades', JSON.stringify(cronograma));
-  evidencias.forEach((file, idx) => {
-    formData.append(`evidencias[${idx}]`, file);
-  });
-
+export async function updateCronograma(projectId: string, formData: FormData) {
   const response = await api.patch(
     `/projects/${projectId}/cronograma`,
     formData,

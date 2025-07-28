@@ -107,7 +107,8 @@ const getStatusIcon = (status: string) => {
 
 function EvidencePreview({ evidence }: { evidence: string | File }) {
   const url = useMemo(
-    () => (typeof evidence === 'string' ? evidence : URL.createObjectURL(evidence)),
+    () =>
+      typeof evidence === 'string' ? evidence : URL.createObjectURL(evidence),
     [evidence],
   );
 
@@ -119,12 +120,21 @@ function EvidencePreview({ evidence }: { evidence: string | File }) {
     };
   }, [evidence, url]);
 
-  const isImage = url.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/i);
+  // Verifica por extensão se for string
+  const isImageFromUrl =
+    typeof evidence === 'string' &&
+    evidence.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/i);
+
+  // Verifica por MIME type se for File
+  const isImageFromFile =
+    typeof evidence !== 'string' && evidence.type.startsWith('image/');
+
+  const isImage = isImageFromUrl || isImageFromFile;
 
   return isImage ? (
     <img
       src={url}
-      alt="Evid\u00eancia"
+      alt="Evidência"
       className="w-16 h-16 object-cover rounded border"
     />
   ) : (
@@ -174,14 +184,13 @@ export default function ProjectActivities() {
           description: a.descricao || '',
           acompanhamento: a.acompanhamento || '',
           status: a.status || 'novo',
-          start: a.data_inicio || '',
-          end: a.data_fim || '',
+          start: a.inicio || '',
+          end: a.fim || '',
           evidences: a.evidencias,
         })),
       );
     }
   }, [cronogramaData]);
-
 
   if (isLoading || isCronogramaLoading) {
     return (
@@ -301,28 +310,34 @@ export default function ProjectActivities() {
   };
 
   const handleSave = async () => {
+    const formData = new FormData();
+
     const cronograma_atividades = activities.map((a) => ({
       titulo: a.title,
       descricao: a.description,
       acompanhamento: a.acompanhamento,
       status: a.status,
-      data_inicio: a.start,
-      data_fim: a.end,
+      inicio: a.start,
+      fim: a.end,
+      evidencias: a.evidences.filter((ev) => typeof ev === 'string'), // preserva evidências antigas
     }));
 
-    const evidencias: File[] = [];
-    activities.forEach((a) => {
-      a.evidences.forEach((ev) => {
+    formData.append(
+      'cronograma_atividades',
+      JSON.stringify(cronograma_atividades),
+    );
+
+    activities.forEach((activity, index) => {
+      activity.evidences.forEach((ev) => {
         if (ev instanceof File) {
-          evidencias.push(ev);
+          formData.append(`evidencias[${index}]`, ev); // associação correta!
         }
       });
     });
 
     await mutateAsync({
       projectId: data?.id || '',
-      cronograma: cronograma_atividades,
-      evidencias,
+      data: formData,
     });
   };
 
@@ -785,7 +800,7 @@ export default function ProjectActivities() {
                         </Badge>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-100">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-200">
                         <div className="flex items-center gap-2 text-slate-600">
                           <Calendar className="w-4 h-4 text-blue-600" />
                           <span className="text-sm">Início:</span>
@@ -808,13 +823,13 @@ export default function ProjectActivities() {
                               : 'Não definido'}
                           </span>
                         </div>
-                        {activity.evidences.length > 0 && (
+                        {activity?.evidences?.length > 0 && (
                           <div>
                             <p className="text-sm font-medium text-slate-700">
                               Evidências:
                             </p>
                             <div className="flex flex-wrap gap-2 mt-1">
-                              {activity.evidences.map((ev, i) => (
+                              {activity?.evidences?.map((ev, i) => (
                                 <EvidencePreview key={i} evidence={ev} />
                               ))}
                             </div>

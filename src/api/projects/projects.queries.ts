@@ -121,14 +121,11 @@ export function useUpdateCronogramaMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mutationFn: (data: {
-      projectId: string;
-      cronograma: CronogramaAtividade[];
-      evidencias: File[];
-    }) => updateCronograma(data.projectId, data.cronograma, data.evidencias),
+    mutationFn: (data: { projectId: string; data: FormData }) =>
+      updateCronograma(data.projectId, data.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-by-id'] });
+      queryClient.invalidateQueries({ queryKey: ['project-cronograma'] });
       toast.success('Cronograma atualizado com sucesso!');
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -22,7 +22,7 @@ export default function NotificationSheet() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5 " />
           {data && data.length > 0 && (
-            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-3 h-3 text-[8px] font-medium text-white bg-red-500 rounded-full">
+            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 text-[8px] font-medium text-white bg-red-500 rounded-full">
               {data.length}
             </span>
           )}
