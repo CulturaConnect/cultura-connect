@@ -11,6 +11,7 @@ import {
   UserCheck,
   Clock,
   CheckCircle,
+  Paperclip,
   ArrowLeft,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -246,6 +247,66 @@ export default function ProjectDetails() {
                       {data?.modelo.retencao}
                     </p>
                   </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      Apresentação
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.apresentacao}
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Histórico</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.historico}
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Observações</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.observacoes}
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      Descrição da Proposta
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.descricao_proposta}
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      Descrição da Contrapartida
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.descricao_contrapartida}
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Justificativa</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {data?.justificativa}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -365,6 +426,32 @@ export default function ProjectDetails() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Anexos */}
+            {data?.anexos && data.anexos.length > 0 && (
+              <Card className="shadow-lg border-0">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Paperclip className="w-5 h-5 text-gray-600" />
+                    Anexos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  {data.anexos.map((anexo, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <a
+                        href={anexo.arquivo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {anexo.descricao}
+                      </a>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {isOwner && (
