@@ -74,6 +74,7 @@ export interface Equipe {
 export interface Anexo {
   descricao?: string;
   arquivo?: File;
+  arquivo_url?: string;
 }
 
 export interface Project {
