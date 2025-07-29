@@ -230,6 +230,24 @@ export default function ProjectRegistrationForm() {
       .min(1, 'É necessário adicionar pelo menos uma área de execução.'),
 
     resumo: z.string({ required_error: 'O resumo do projeto é obrigatório.' }),
+    apresentacao: z.string({
+      required_error: 'O campo de apresentação é obrigatório.',
+    }),
+    historico: z.string({
+      required_error: 'O campo de histórico é obrigatório.',
+    }),
+    observacoes: z.string({
+      required_error: 'O campo de observações é obrigatório.',
+    }),
+    descricao_proposta: z.string({
+      required_error: 'O campo de descrição da proposta é obrigatório.',
+    }),
+    descricao_contrapartida: z.string({
+      required_error: 'O campo de descrição da contrapartida é obrigatório.',
+    }),
+    justificativa: z.string({
+      required_error: 'O campo de justificativa é obrigatório.',
+    }),
     objetivos_gerais: z.string({
       required_error: 'O campo de objetivos gerais é obrigatório.',
     }),
@@ -238,6 +256,19 @@ export default function ProjectRegistrationForm() {
     cronograma_atividades: z
       .array(cronogramaSchema)
       .min(1, 'É necessário adicionar pelo menos uma atividade ao cronograma.'),
+
+    anexos: z
+      .array(
+        z.object({
+          descricao: z.string({
+            required_error: 'A descrição do anexo é obrigatória.',
+          }),
+          arquivo: z.instanceof(File, {
+            message: 'É necessário selecionar um arquivo.',
+          }),
+        }),
+      )
+      .min(1, 'É necessário adicionar pelo menos um anexo.'),
 
     orcamento_previsto: z.string().optional(),
 
@@ -315,6 +346,12 @@ export default function ProjectRegistrationForm() {
         },
       ],
       resumo: '',
+      apresentacao: '',
+      historico: '',
+      observacoes: '',
+      descricao_proposta: '',
+      descricao_contrapartida: '',
+      justificativa: '',
       objetivos_gerais: '',
       metas: '',
       orcamento_previsto: '',
@@ -326,6 +363,13 @@ export default function ProjectRegistrationForm() {
           status: '',
           inicio: '',
           fim: '',
+        },
+      ],
+      anexos: [
+        {
+          descricao: '',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          arquivo: undefined as unknown as File,
         },
       ],
       responsavel_principal_id: '',
@@ -363,6 +407,15 @@ export default function ProjectRegistrationForm() {
   } = useFieldArray({
     control,
     name: 'areas_execucao',
+  });
+
+  const {
+    fields: anexosFields,
+    append: appendAnexo,
+    remove: removeAnexo,
+  } = useFieldArray({
+    control,
+    name: 'anexos',
   });
 
   async function handleCepBlur(index: number, value: string) {
@@ -417,8 +470,14 @@ export default function ProjectRegistrationForm() {
           titulo_oficial: true,
           areas_execucao: true,
           resumo: true,
+          apresentacao: true,
+          historico: true,
+          observacoes: true,
         }),
         5: rawSchema.pick({
+          descricao_proposta: true,
+          descricao_contrapartida: true,
+          justificativa: true,
           objetivos_gerais: true,
           metas: true,
           cronograma_atividades: true,
@@ -426,6 +485,7 @@ export default function ProjectRegistrationForm() {
           orcamento_gasto: true,
         }),
         6: rawSchema.pick({ responsavel_principal_id: true, equipe: true }),
+        7: rawSchema.pick({ anexos: true }),
       }
     : {
         1: step1Schema,
@@ -434,8 +494,14 @@ export default function ProjectRegistrationForm() {
           titulo_oficial: true,
           areas_execucao: true,
           resumo: true,
+          apresentacao: true,
+          historico: true,
+          observacoes: true,
         }),
         4: rawSchema.pick({
+          descricao_proposta: true,
+          descricao_contrapartida: true,
+          justificativa: true,
           objetivos_gerais: true,
           metas: true,
           cronograma_atividades: true,
@@ -443,6 +509,7 @@ export default function ProjectRegistrationForm() {
           orcamento_gasto: true,
         }),
         5: rawSchema.pick({ equipe: true }),
+        6: rawSchema.pick({ anexos: true }),
       };
 
   const { mutateAsync, isPending } = useCreateProjectMutation();
@@ -485,7 +552,7 @@ export default function ProjectRegistrationForm() {
     }
   }, [imageFile]);
 
-  const totalSteps = isCompany ? 6 : 5;
+  const totalSteps = isCompany ? 7 : 6;
 
   const nextStep = async () => {
     const values = form.getValues();
@@ -538,7 +605,7 @@ export default function ProjectRegistrationForm() {
             >
               {step}
             </div>
-            {index < 5 && (
+            {index < totalSteps - 1 && (
               <div
                 className={`hidden sm:block w-12 h-0.5 transition-colors duration-200 ${
                   step < currentStep ? 'bg-green-500' : 'bg-gray-200'
@@ -874,6 +941,42 @@ export default function ProjectRegistrationForm() {
 
       <FormField
         control={form.control}
+        name="apresentacao"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Apresentação</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Descreva a apresentação..."
+                className="min-h-[100px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="historico"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Histórico</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Descreva o histórico..."
+                className="min-h-[100px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="areas_execucao"
         render={({ field }) => (
           <FormItem>
@@ -1032,11 +1135,83 @@ export default function ProjectRegistrationForm() {
           </FormItem>
         )}
       />
+
+      <FormField
+        control={form.control}
+        name="observacoes"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Observações</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Observações sobre a área de execução..."
+                className="min-h-[100px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 
   const renderStep5 = () => (
     <div className="space-y-6">
+      <FormField
+        control={form.control}
+        name="descricao_proposta"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Descrição da proposta</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Descreva a proposta..."
+                className="min-h-[120px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="descricao_contrapartida"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Descrição da contrapartida</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Descreva a contrapartida..."
+                className="min-h-[120px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="justificativa"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Justificativa</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Justificativa do projeto..."
+                className="min-h-[120px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={form.control}
         name="objetivos_gerais"
@@ -1430,6 +1605,88 @@ export default function ProjectRegistrationForm() {
     </div>
   );
 
+  const renderStep7 = () => (
+    <div className="space-y-6">
+      <FormField
+        control={form.control}
+        name="anexos"
+        render={() => (
+          <FormItem>
+            <FormLabel>Anexos</FormLabel>
+            <div className="space-y-4">
+              {anexosFields.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-4 items-start border p-4 rounded-md"
+                >
+                  <h5>Anexo {index + 1}</h5>
+                  <FormField
+                    control={form.control}
+                    name={`anexos.${index}.descricao`}
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Descreva o anexo..."
+                            className="min-h-[80px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`anexos.${index}.arquivo`}
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Arquivo</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="file"
+                            onChange={(e) => field.onChange(e.target.files?.[0])}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {anexosFields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => removeAnexo(index)}
+                    >
+                      Remover
+                    </Button>
+                  )}
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  appendAnexo({
+                    descricao: '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    arquivo: undefined as unknown as File,
+                  })
+                }
+              >
+                Adicionar anexo
+              </Button>
+            </div>
+          </FormItem>
+        )}
+      />
+    </div>
+  );
+
   const steps = isCompany
     ? [
         renderStep1,
@@ -1438,8 +1695,9 @@ export default function ProjectRegistrationForm() {
         renderStep4,
         renderStep5,
         renderStep6,
+        renderStep7,
       ]
-    : [renderStep1, renderStep2, renderStep4, renderStep5, renderStep6];
+    : [renderStep1, renderStep2, renderStep4, renderStep5, renderStep6, renderStep7];
 
   const renderSteps = () => (
     <>
@@ -1474,12 +1732,15 @@ export default function ProjectRegistrationForm() {
                 case 2:
                   return `Canva digital - ${name}`;
                 case 3:
+                  return `Dados do proponente - ${name}`;
                 case 4:
                   return `Dados do proponente - ${name}`;
                 case 5:
                   return `Plano de trabalho - ${name}`;
-                default:
+                case 6:
                   return `Equipe de trabalho - ${name}`;
+                default:
+                  return `Anexos - ${name}`;
               }
             } else {
               switch (currentStep) {
@@ -1491,8 +1752,10 @@ export default function ProjectRegistrationForm() {
                   return `Dados do proponente - ${name}`;
                 case 4:
                   return `Plano de trabalho - ${name}`;
-                default:
+                case 5:
                   return `Equipe de trabalho - ${name}`;
+                default:
+                  return `Anexos - ${name}`;
               }
             }
           })()}

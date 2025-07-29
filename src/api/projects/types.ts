@@ -9,9 +9,16 @@ export interface CreateProject {
   imagem?: File;
   areas_execucao?: AreasExecucao[];
   resumo?: string;
+  apresentacao?: string;
+  historico?: string;
+  observacoes?: string;
+  descricao_proposta?: string;
+  descricao_contrapartida?: string;
+  justificativa?: string;
   objetivos_gerais?: string;
   metas?: string;
   cronograma_atividades?: CronogramaAtividade[];
+  anexos?: Anexo[];
   responsavel_principal_id?: string;
   equipe?: Equipe[];
   responsavel_legal_id?: string;
@@ -64,6 +71,11 @@ export interface Equipe {
   cpf_cnpj?: string;
 }
 
+export interface Anexo {
+  descricao: string;
+  arquivo: File;
+}
+
 export interface Project {
   id: string;
   nome: string;
@@ -75,9 +87,16 @@ export interface Project {
   imagem_url: string;
   areas_execucao: AreasExecucao[];
   resumo: string;
+  apresentacao: string;
+  historico: string;
+  observacoes: string;
+  descricao_proposta: string;
+  descricao_contrapartida: string;
+  justificativa: string;
   objetivos_gerais: string;
   metas: string;
   cronograma_atividades: CronogramaAtividade[];
+  anexos: Anexo[];
   responsavel_principal_id: string | null;
   equipe: Equipe[];
   responsavel_legal_id: string | null;
