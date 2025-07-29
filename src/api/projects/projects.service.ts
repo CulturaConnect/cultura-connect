@@ -28,6 +28,12 @@ export async function createProject(data: CreateProject) {
 
   formData.append('titulo_oficial', data.titulo_oficial ?? '');
   formData.append('resumo', data.resumo ?? '');
+  formData.append('apresentacao', data.apresentacao ?? '');
+  formData.append('historico', data.historico ?? '');
+  formData.append('observacoes', data.observacoes ?? '');
+  formData.append('descricao_proposta', data.descricao_proposta ?? '');
+  formData.append('descricao_contrapartida', data.descricao_contrapartida ?? '');
+  formData.append('justificativa', data.justificativa ?? '');
   formData.append('objetivos_gerais', data.objetivos_gerais ?? '');
   formData.append('metas', data.metas ?? '');
   formData.append(
@@ -53,6 +59,11 @@ export async function createProject(data: CreateProject) {
   if (data.imagem) {
     formData.append('imagem', data.imagem);
   }
+
+  data.anexos?.forEach((anexo, index) => {
+    formData.append(`anexos[${index}][descricao]`, anexo.descricao);
+    formData.append(`anexos[${index}][arquivo]`, anexo.arquivo);
+  });
 
   const response = await api.post('/projects', formData, {
     headers: {
