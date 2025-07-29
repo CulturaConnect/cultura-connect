@@ -368,7 +368,7 @@ export default function ProjectRegistrationForm() {
       anexos: [
         {
           descricao: '',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           arquivo: undefined as unknown as File,
         },
       ],
@@ -1646,7 +1646,9 @@ export default function ProjectRegistrationForm() {
                         <FormControl>
                           <Input
                             type="file"
-                            onChange={(e) => field.onChange(e.target.files?.[0])}
+                            onChange={(e) =>
+                              field.onChange(e.target.files?.[0])
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -1673,7 +1675,7 @@ export default function ProjectRegistrationForm() {
                 onClick={() =>
                   appendAnexo({
                     descricao: '',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                     arquivo: undefined as unknown as File,
                   })
                 }
@@ -1697,7 +1699,14 @@ export default function ProjectRegistrationForm() {
         renderStep6,
         renderStep7,
       ]
-    : [renderStep1, renderStep2, renderStep4, renderStep5, renderStep6, renderStep7];
+    : [
+        renderStep1,
+        renderStep2,
+        renderStep4,
+        renderStep5,
+        renderStep6,
+        renderStep7,
+      ];
 
   const renderSteps = () => (
     <>
@@ -1765,7 +1774,7 @@ export default function ProjectRegistrationForm() {
       {renderStepIndicator()}
 
       <div className="relative flex-1 overflow-y-auto">
-        <div
+        {/* <div
           className="
       absolute top-0 left-0 right-0 h-4 
       pointer-events-none 
@@ -1778,7 +1787,7 @@ export default function ProjectRegistrationForm() {
       pointer-events-none 
       bg-gradient-to-t from-white to-transparent z-10
     "
-        />
+        /> */}
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
