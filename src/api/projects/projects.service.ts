@@ -30,7 +30,7 @@ export async function createProject(data: CreateProject) {
   formData.append('resumo', data.resumo ?? '');
   formData.append('apresentacao', data.apresentacao ?? '');
   formData.append('historico', data.historico ?? '');
-  formData.append('observacoes', data.observacoes ?? '');
+
   formData.append('descricao_proposta', data.descricao_proposta ?? '');
   formData.append(
     'descricao_contrapartida',

@@ -11,7 +11,6 @@ export interface CreateProject {
   resumo?: string;
   apresentacao?: string;
   historico?: string;
-  observacoes?: string;
   descricao_proposta?: string;
   descricao_contrapartida?: string;
   justificativa?: string;
@@ -53,6 +52,7 @@ export interface AreasExecucao {
   complemento?: string;
   bairro?: string;
   cidade?: string;
+  observacoes?: string;
 }
 
 export interface CronogramaAtividade {

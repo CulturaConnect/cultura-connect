@@ -87,6 +87,9 @@ const areaExecucaoSchema = z.object({
   complemento: z.string().optional(),
   bairro: z.string().min(1, 'Bairro é obrigatório'),
   cidade: z.string().min(1, 'Cidade é obrigatória'),
+  observacoes: z.string({
+    required_error: 'O campo de observações é obrigatório.',
+  }),
 });
 
 const cronogramaSchema = z
@@ -236,9 +239,7 @@ export default function ProjectRegistrationForm() {
     historico: z.string({
       required_error: 'O campo de histórico é obrigatório.',
     }),
-    observacoes: z.string({
-      required_error: 'O campo de observações é obrigatório.',
-    }),
+
     descricao_proposta: z.string({
       required_error: 'O campo de descrição da proposta é obrigatório.',
     }),
@@ -343,12 +344,12 @@ export default function ProjectRegistrationForm() {
           complemento: '',
           bairro: '',
           cidade: '',
+          observacoes: '',
         },
       ],
       resumo: '',
       apresentacao: '',
       historico: '',
-      observacoes: '',
       descricao_proposta: '',
       descricao_contrapartida: '',
       justificativa: '',
@@ -472,7 +473,6 @@ export default function ProjectRegistrationForm() {
           resumo: true,
           apresentacao: true,
           historico: true,
-          observacoes: true,
         }),
         5: rawSchema.pick({
           descricao_proposta: true,
@@ -496,7 +496,6 @@ export default function ProjectRegistrationForm() {
           resumo: true,
           apresentacao: true,
           historico: true,
-          observacoes: true,
         }),
         4: rawSchema.pick({
           descricao_proposta: true,
@@ -1102,6 +1101,24 @@ export default function ProjectRegistrationForm() {
                     />
                   </div>
 
+                  <FormField
+                    control={form.control}
+                    name={`areas_execucao.${index}.observacoes`}
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Observações</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Observações sobre a área de execução..."
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   {areaFields.length > 1 && (
                     <Button
                       variant="destructive"
@@ -1132,24 +1149,6 @@ export default function ProjectRegistrationForm() {
                 Adicionar área
               </Button>
             </div>
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="observacoes"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Observações</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Observações sobre a área de execução..."
-                className="min-h-[100px]"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
           </FormItem>
         )}
       />

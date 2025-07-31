@@ -11,11 +11,21 @@ import {
   useUpdateBudgetItemMutation,
 } from '@/api/projects/projects.queries';
 import type { Project } from '@/api/projects/types';
-import { ArrowLeft, Save, Loader2, ArrowRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import ReactPaginate from 'react-paginate';
+import { cn } from '@/lib/utils';
 
 export interface BudgetItem {
   id?: string;
@@ -373,7 +383,6 @@ export default function ProjectBudget() {
                 <th className="text-left p-3 font-semibold">Qtd. Unidade</th>
                 <th className="text-left p-3 font-semibold">Unidade</th>
                 <th className="text-left p-3 font-semibold">Valor Unit.</th>
-                <th className="text-left p-3 font-semibold">Tipo</th>
                 <th className="text-left p-3 font-semibold">Subtotal</th>
                 <th className="text-right p-3 font-semibold">Ações</th>
               </tr>
@@ -389,16 +398,26 @@ export default function ProjectBudget() {
                     <td className="p-3">
                       R$ {item.unitValue.toLocaleString('pt-BR')}
                     </td>
-                    <td className="p-3">
-                      {item.adjustTotal ? (
-                        <span className="text-green-600">+ Incremento</span>
-                      ) : (
-                        <span className="text-red-600">- Decréscimo</span>
+
+                    <td
+                      className={cn(
+                        'p-3 font-semibold ',
+                        item.adjustTotal ? 'text-green-600' : 'text-red-600',
                       )}
-                    </td>
-                    <td className="p-3">
-                      R${' '}
-                      {(item.quantity * item.unitQty * item.unitValue).toLocaleString('pt-BR')}
+                    >
+                      <div className="flex items-center gap-1">
+                        R${' '}
+                        {(
+                          item.quantity *
+                          item.unitQty *
+                          item.unitValue
+                        ).toLocaleString('pt-BR')}
+                        {item.adjustTotal ? (
+                          <ChevronUp size={17} />
+                        ) : (
+                          <ChevronDown size={17} />
+                        )}
+                      </div>
                     </td>
                     <td className="p-3 text-right">
                       <Button
