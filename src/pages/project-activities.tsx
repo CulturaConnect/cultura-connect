@@ -731,7 +731,7 @@ export default function ProjectActivities() {
                         }}
                         className="mt-2 border-slate-200"
                       />
-                      {activityForm.evidences.length > 0 && (
+                      {activityForm?.evidences?.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {activityForm.evidences.map((ev, idx) => (
                             <EvidencePreview key={idx} evidence={ev} />

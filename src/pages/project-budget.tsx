@@ -198,6 +198,17 @@ export default function ProjectBudget() {
       ? unitValue * quantity * unitQty
       : 0;
 
+  const ajusteTotal = budgetItems
+    .filter((item) => item.adjustTotal)
+    .reduce((acc, item) => {
+      const q = item.quantity || 0;
+      const u = item.unitQty || 0;
+      const v = item.unitValue || 0;
+      return acc + Math.max(0, q * u * v); // evita valores negativos ou inválidos
+    }, 0);
+
+  const orcamentoBase = totalBudget + spentBudget - ajusteTotal;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10 shadow-sm">
@@ -272,6 +283,9 @@ export default function ProjectBudget() {
           </div>
 
           <div className="flex items-center gap-4">
+            <Badge className="text-sm">
+              Orçamento Base: R$ {orcamentoBase.toLocaleString('pt-BR')}
+            </Badge>
             <Badge>Total: R$ {totalBudget.toLocaleString('pt-BR')}</Badge>
             <Badge>Gasto: R$ {spentBudget.toLocaleString('pt-BR')}</Badge>
             <Badge variant={remainingBudget >= 0 ? 'secondary' : 'destructive'}>

@@ -4,6 +4,7 @@ import { useGetProjectsQuery } from '@/api/projects/projects.queries';
 import { ProjectCard } from './project-card';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth';
+import { Project } from '@/api/projects/types';
 
 interface ProjectsGridProps {
   filterBy?: 'all' | 'mine';
@@ -14,16 +15,15 @@ export function ProjectsGrid({ filterBy = 'all' }: ProjectsGridProps) {
   const { user } = useAuth();
   const { data } = useGetProjectsQuery(searchQuery);
 
-  function getProjectProgress(project) {
-    const inicio = new Date(project.inicio);
-    const fim = new Date(project.fim);
+  function getProjectProgress(project: Project) {
+    const totalActivities = project.cronograma_atividades?.length || 0;
+    const completedActivities =
+      project.cronograma_atividades?.filter(
+        (activity) => activity.status === 'concluido',
+      ).length || 0;
 
-    const totalDuration = fim.getTime() - inicio.getTime();
-    const currentDuration = new Date().getTime() - inicio.getTime();
-    const progress = Math.min(
-      Math.max((currentDuration / totalDuration) * 100, 0),
-      100,
-    );
+    const progress =
+      totalActivities > 0 ? (completedActivities / totalActivities) * 100 : 0;
     return Math.round(progress);
   }
 

@@ -262,7 +262,9 @@ export default function ProjectDetails() {
                   <Separator />
 
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Histórico</h3>
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      Histórico
+                    </h3>
                     <p className="text-gray-600 text-sm leading-relaxed">
                       {data?.historico}
                     </p>
@@ -293,7 +295,9 @@ export default function ProjectDetails() {
                   <Separator />
 
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Justificativa</h3>
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      Justificativa
+                    </h3>
                     <p className="text-gray-600 text-sm leading-relaxed">
                       {data?.justificativa}
                     </p>
@@ -342,8 +346,12 @@ export default function ProjectDetails() {
                         </div>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-900">Observações:</span>
-                        <p className="text-gray-600 mt-1">{area.observacoes}</p>
+                        <span className="font-medium text-gray-900">
+                          Observações:
+                        </span>
+                        <p className="text-gray-600 mt-1">
+                          {area?.observacoes}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -433,7 +441,10 @@ export default function ProjectDetails() {
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                   {data.anexos.map((anexo, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 text-sm"
+                    >
                       <a
                         href={anexo.arquivo_url}
                         target="_blank"
