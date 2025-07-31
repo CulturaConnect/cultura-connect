@@ -271,15 +271,6 @@ export default function ProjectDetails() {
                   <Separator />
 
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Observações</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
-                      {data?.observacoes}
-                    </p>
-                  </div>
-
-                  <Separator />
-
-                  <div>
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Descrição da Proposta
                     </h3>
@@ -349,6 +340,10 @@ export default function ProjectDetails() {
                           </span>
                           <p className="text-gray-600 mt-1">{area.cep}</p>
                         </div>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-900">Observações:</span>
+                        <p className="text-gray-600 mt-1">{area.observacoes}</p>
                       </div>
                     </div>
                   ))}
