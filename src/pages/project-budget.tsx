@@ -112,13 +112,19 @@ export default function ProjectBudget() {
       return;
     }
 
+    const unitQty = Number(form.unitQty);
+    if (isNaN(unitQty) || unitQty <= 0) {
+      toast.error('Quantidade unidade inválida');
+      return;
+    }
+
     const value = Number(form.unitValue);
     if (isNaN(value) || value <= 0) {
       toast.error('Valor unitário inválido');
       return;
     }
 
-    const total = qty * value;
+    const total = qty * unitQty * value;
 
     const newItem: BudgetItem = {
       description: form.description,
@@ -133,6 +139,8 @@ export default function ProjectBudget() {
 
     if (form.adjustTotal) {
       setTotalBudget((prev) => prev + total);
+    } else {
+      setTotalBudget((prev) => prev - total);
     }
 
     setForm({
@@ -148,8 +156,11 @@ export default function ProjectBudget() {
   const removeItem = (index: number) => {
     const item = items[index];
     if (item) {
+      const total = item.quantity * item.unitQty * item.unitValue;
       if (item.adjustTotal) {
-        setTotalBudget((prev) => prev - item.quantity * item.unitValue);
+        setTotalBudget((prev) => prev - total);
+      } else {
+        setTotalBudget((prev) => prev + total);
       }
       setItems(items.filter((_, idx) => idx !== index));
     }
@@ -171,8 +182,11 @@ export default function ProjectBudget() {
 
   const unitValue = Number(form.unitValue);
   const quantity = Number(form.quantity);
+  const unitQty = Number(form.unitQty);
   const subtotal =
-    !isNaN(unitValue) && !isNaN(quantity) ? unitValue * quantity : 0;
+    !isNaN(unitValue) && !isNaN(quantity) && !isNaN(unitQty)
+      ? unitValue * quantity * unitQty
+      : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -257,7 +271,7 @@ export default function ProjectBudget() {
         </div>
 
         <div className="space-y-4 bg-white/70 backdrop-blur-sm p-4 rounded-md shadow">
-          <div className="grid md:grid-cols-5 gap-4 items-end">
+          <div className="grid md:grid-cols-6 gap-4 items-end">
             <div className="md:col-span-2">
               <Label htmlFor="desc">Descrição</Label>
               <Input
@@ -279,6 +293,19 @@ export default function ProjectBudget() {
                 placeholder='Ex: "10", "5.5"'
                 onChange={(e) =>
                   setForm({ ...form, quantity: Number(e.target.value) })
+                }
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="unitQty">Quantidade Unidade</Label>
+              <Input
+                id="unitQty"
+                type="number"
+                value={form.unitQty}
+                placeholder="1"
+                onChange={(e) =>
+                  setForm({ ...form, unitQty: Number(e.target.value) })
                 }
                 className="mt-2"
               />
@@ -314,7 +341,7 @@ export default function ProjectBudget() {
               }
               className="mr-2"
             />
-            <Label htmlFor="adjust">Ajustar orçamento total</Label>
+            <Label htmlFor="adjust">Incrementar orçamento total</Label>
           </div>
 
           <div className="flex justify-end flex-col">
@@ -343,8 +370,10 @@ export default function ProjectBudget() {
               <tr>
                 <th className="text-left p-3 font-semibold">Descrição</th>
                 <th className="text-left p-3 font-semibold">Qtd.</th>
+                <th className="text-left p-3 font-semibold">Qtd. Unidade</th>
                 <th className="text-left p-3 font-semibold">Unidade</th>
                 <th className="text-left p-3 font-semibold">Valor Unit.</th>
+                <th className="text-left p-3 font-semibold">Tipo</th>
                 <th className="text-left p-3 font-semibold">Subtotal</th>
                 <th className="text-right p-3 font-semibold">Ações</th>
               </tr>
@@ -355,13 +384,21 @@ export default function ProjectBudget() {
                   <tr key={item.id || idx} className="border-b last:border-0">
                     <td className="p-3">{item.description}</td>
                     <td className="p-3">{item.quantity}</td>
+                    <td className="p-3">{item.unitQty}</td>
                     <td className="p-3">{item.unit}</td>
                     <td className="p-3">
                       R$ {item.unitValue.toLocaleString('pt-BR')}
                     </td>
                     <td className="p-3">
+                      {item.adjustTotal ? (
+                        <span className="text-green-600">+ Incremento</span>
+                      ) : (
+                        <span className="text-red-600">- Decréscimo</span>
+                      )}
+                    </td>
+                    <td className="p-3">
                       R${' '}
-                      {(item.quantity * item.unitValue).toLocaleString('pt-BR')}
+                      {(item.quantity * item.unitQty * item.unitValue).toLocaleString('pt-BR')}
                     </td>
                     <td className="p-3 text-right">
                       <Button
