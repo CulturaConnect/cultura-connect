@@ -90,7 +90,6 @@ export interface Project {
   resumo: string;
   apresentacao: string;
   historico: string;
-  observacoes: string;
   descricao_proposta: string;
   descricao_contrapartida: string;
   justificativa: string;
