@@ -48,6 +48,8 @@ export default function ProjectDetails() {
   const [tabs, setTabs] = useState<string>('details');
   const isOwner = user?.id === data?.company_id;
 
+  console.log(data)
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -451,7 +453,7 @@ export default function ProjectDetails() {
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline"
                       >
-                        {anexo.descricao}
+                        {anexo.descricao || anexo.arquivo_url?.split('/').pop() || 'Arquivo'}
                       </a>
                     </div>
                   ))}

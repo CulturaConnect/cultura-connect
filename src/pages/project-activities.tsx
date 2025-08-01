@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,7 +57,7 @@ export interface ProjectActivity {
   status: string;
   start: string;
   end: string;
-  evidences: Array<string | File>;
+  evidences: Array<string | File | { url: string; descricao: string }>;
 }
 
 const statusOptions = [
@@ -105,31 +105,47 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-function EvidencePreview({ evidence }: { evidence: string | File }) {
-  const url = useMemo(
-    () =>
-      typeof evidence === 'string' ? evidence : URL.createObjectURL(evidence),
-    [evidence],
-  );
+function EvidencePreview({ evidence }: { evidence: string | File | { url: string; descricao: string } }) {
+  console.log(evidence)
+  const url = useMemo(() => {
+    if (typeof evidence === 'string') {
+      return evidence;
+    } else if (evidence instanceof File) {
+      return URL.createObjectURL(evidence);
+    } else {
+      return evidence.url;
+    }
+  }, [evidence]);
 
   useEffect(() => {
     return () => {
-      if (typeof evidence !== 'string') {
+      if (evidence instanceof File) {
         URL.revokeObjectURL(url);
       }
     };
   }, [evidence, url]);
 
-  // Verifica por extensão se for string
+  // Verifica por extensão se for string ou objeto com url
   const isImageFromUrl =
-    typeof evidence === 'string' &&
-    evidence.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/i);
+    (typeof evidence === 'string' && evidence.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/i)) ||
+    (typeof evidence === 'object' && 'url' in evidence && evidence.url.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/i));
 
   // Verifica por MIME type se for File
   const isImageFromFile =
-    typeof evidence !== 'string' && evidence.type.startsWith('image/');
+    evidence instanceof File && evidence.type.startsWith('image/');
 
   const isImage = isImageFromUrl || isImageFromFile;
+
+  // Obter nome do arquivo
+  const fileName = (() => {
+    if (typeof evidence === 'string') {
+      return evidence.split('/').pop() || 'Arquivo';
+    } else if (evidence instanceof File) {
+      return evidence.name || 'Arquivo';
+    } else {
+      return evidence.descricao || 'Arquivo';
+    }
+  })();
 
   return isImage ? (
     <img
@@ -142,9 +158,10 @@ function EvidencePreview({ evidence }: { evidence: string | File }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-16 h-16 border rounded flex items-center justify-center text-xs text-blue-600"
+      className="w-16 h-16 border rounded flex items-center justify-center text-xs text-blue-600 text-center p-1"
+      title={fileName}
     >
-      Documento
+      {fileName.length > 12 ? fileName.substring(0, 12) + '...' : fileName}
     </a>
   );
 }
@@ -173,24 +190,55 @@ export default function ProjectActivities() {
     end: '',
     evidences: [],
   });
+
+
+  console.log(activityForm)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalActivities, setOriginalActivities] = useState<ProjectActivity[]>([]);
   console.log(activities);
 
   useEffect(() => {
     if (cronogramaData) {
-      setActivities(
-        cronogramaData.map((a, idx) => ({
-          id: idx.toString(),
-          title: a.titulo || '',
-          description: a.descricao || '',
-          acompanhamento: a.acompanhamento || '',
-          status: a.status || 'novo',
-          start: a.inicio || '',
-          end: a.fim || '',
-          evidences: a.evidencias,
-        })),
-      );
+      const mappedActivities = cronogramaData.map((a, idx) => ({
+        id: idx.toString(),
+        title: a.titulo || '',
+        description: a.descricao || '',
+        acompanhamento: a.acompanhamento || '',
+        status: a.status || 'novo',
+        start: a.inicio || '',
+        end: a.fim || '',
+        evidences: a.evidencias,
+      }));
+      setActivities(mappedActivities);
+      setOriginalActivities(JSON.parse(JSON.stringify(mappedActivities)));
     }
   }, [cronogramaData]);
+
+  // Detectar mudanças não salvas
+  useEffect(() => {
+    const hasChanges = JSON.stringify(activities) !== JSON.stringify(originalActivities);
+    setHasUnsavedChanges(hasChanges);
+  }, [activities, originalActivities]);
+
+  // Função para lidar com tentativa de navegação
+  const handleBackNavigation = useCallback(() => {
+    if (hasUnsavedChanges) {
+      const confirmLeave = window.confirm(
+        'Você tem alterações não salvas. Deseja realmente sair sem salvar?'
+      );
+      if (!confirmLeave) {
+        return;
+      }
+    }
+    navigate(-1);
+  }, [hasUnsavedChanges, navigate]);
+
+  // Função para cancelar alterações
+  const handleCancelChanges = useCallback(() => {
+    setActivities(JSON.parse(JSON.stringify(originalActivities)));
+    setHasUnsavedChanges(false);
+    toast.success('Alterações canceladas');
+  }, [originalActivities]);
 
   if (isLoading || isCronogramaLoading) {
     return (
@@ -310,35 +358,46 @@ export default function ProjectActivities() {
   };
 
   const handleSave = async () => {
-    const formData = new FormData();
+    try {
+      const formData = new FormData();
 
-    const cronograma_atividades = activities.map((a) => ({
-      titulo: a.title,
-      descricao: a.description,
-      acompanhamento: a.acompanhamento,
-      status: a.status,
-      inicio: a.start,
-      fim: a.end,
-      evidencias: a.evidences.filter((ev) => typeof ev === 'string'), // preserva evidências antigas
-    }));
+      const cronograma_atividades = activities.map((a) => ({
+        titulo: a.title,
+        descricao: a.description,
+        acompanhamento: a.acompanhamento,
+        status: a.status,
+        inicio: a.start,
+        fim: a.end,
+        evidencias: a.evidences.filter((ev) => typeof ev === 'string' || (typeof ev === 'object' && 'url' in ev)), // preserva evidências antigas (strings e objetos com url)
+      }));
 
-    formData.append(
-      'cronograma_atividades',
-      JSON.stringify(cronograma_atividades),
-    );
+      formData.append(
+        'cronograma_atividades',
+        JSON.stringify(cronograma_atividades),
+      );
 
-    activities.forEach((activity, index) => {
-      activity.evidences.forEach((ev) => {
-        if (ev instanceof File) {
-          formData.append(`evidencias[${index}]`, ev); // associação correta!
-        }
+      activities.forEach((activity, index) => {
+        activity.evidences.forEach((ev, evidenceIndex) => {
+          if (ev instanceof File) {
+            formData.append(`evidencias[${index}]`, ev);
+            // Enviar o nome do arquivo como descrição
+            formData.append(`evidencias_descricao_${index}_${evidenceIndex}`, ev.name);
+          }
+        });
       });
-    });
 
-    await mutateAsync({
-      projectId: data?.id || '',
-      data: formData,
-    });
+      await mutateAsync({
+        projectId: data?.id || '',
+        data: formData,
+      });
+
+      // Atualizar o estado original após salvar com sucesso
+      setOriginalActivities(JSON.parse(JSON.stringify(activities)));
+      setHasUnsavedChanges(false);
+      toast.success('Alterações salvas com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao salvar alterações');
+    }
   };
 
   return (
@@ -352,25 +411,37 @@ export default function ProjectActivities() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(-1)}
+                onClick={handleBackNavigation}
                 className="hover:bg-slate-100 -ml-2"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 <span className="text-sm">Voltar</span>
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isPending}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg px-3"
-              >
-                {isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
+              <div className="flex gap-2">
+                {hasUnsavedChanges && (
+                  <Button
+                    onClick={handleCancelChanges}
+                    variant="outline"
+                    size="sm"
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    Cancelar
+                  </Button>
                 )}
-                <span className="ml-2 hidden xs:inline">Salvar</span>
-              </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={isPending || !hasUnsavedChanges}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg px-3 disabled:opacity-50"
+                >
+                  {isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span className="ml-2 hidden xs:inline">Salvar</span>
+                </Button>
+              </div>
             </div>
             <div className="text-center px-2">
               <h1 className="text-xl font-bold text-slate-900 leading-tight">
@@ -388,7 +459,7 @@ export default function ProjectActivities() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(-1)}
+                onClick={handleBackNavigation}
                 className="hover:bg-slate-100 hover:text-slate-900"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -403,18 +474,29 @@ export default function ProjectActivities() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={isPending}
-              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-            >
-              {isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
+            <div className="flex gap-3">
+              {hasUnsavedChanges && (
+                <Button
+                  onClick={handleCancelChanges}
+                  variant="outline"
+                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  Cancelar Alterações
+                </Button>
               )}
-              Salvar Alterações
-            </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isPending || !hasUnsavedChanges}
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-50"
+              >
+                {isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Salvar Alterações
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -564,7 +646,7 @@ export default function ProjectActivities() {
                     Nova Atividade
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-slate-900">
                       {editingIndex !== null

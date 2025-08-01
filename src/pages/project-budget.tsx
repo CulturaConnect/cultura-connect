@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,11 @@ import {
   useGetProjectByIdQuery,
   useUpdateBudgetItemMutation,
 } from '@/api/projects/projects.queries';
-import type { Project } from '@/api/projects/types';
 import {
   ArrowLeft,
   Save,
   Loader2,
   ArrowRight,
-  ArrowUp,
-  ArrowDown,
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
@@ -50,6 +47,9 @@ export default function ProjectBudget() {
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [totalBudget, setTotalBudget] = useState(0);
   const [spentBudget, setSpentBudget] = useState(0);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalItems, setOriginalItems] = useState<BudgetItem[]>([]);
+  const [originalTotalBudget, setOriginalTotalBudget] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 5;
@@ -60,10 +60,6 @@ export default function ProjectBudget() {
     currentPage * itemsPerPage + itemsPerPage,
   );
 
-  console.log('Paginated Items:', paginatedItems);
-  console.log('Current Page:', currentPage);
-  console.log('Total Items:', items.length);
-
   useEffect(() => {
     setCurrentPage(0); // reset ao adicionar/remover
   }, [items.length]);
@@ -71,6 +67,7 @@ export default function ProjectBudget() {
   useEffect(() => {
     if (budgetItems.length > 0) {
       setItems(budgetItems);
+      setOriginalItems(JSON.parse(JSON.stringify(budgetItems)));
     }
   }, [budgetItems]);
 
@@ -85,11 +82,41 @@ export default function ProjectBudget() {
 
   useEffect(() => {
     if (data) {
-      setTotalBudget(data.orcamento_previsto || 0);
+      const budget = data.orcamento_previsto || 0;
+      setTotalBudget(budget);
+      setOriginalTotalBudget(budget);
       setSpentBudget(data.orcamento_gasto || 0);
       // Could load items from API if available
     }
   }, [data]);
+
+  // Detectar mudanças não salvas
+  useEffect(() => {
+    const itemsChanged = JSON.stringify(items) !== JSON.stringify(originalItems);
+    const budgetChanged = totalBudget !== originalTotalBudget;
+    setHasUnsavedChanges(itemsChanged || budgetChanged);
+  }, [items, originalItems, totalBudget, originalTotalBudget]);
+
+  // Função para lidar com tentativa de navegação
+  const handleBackNavigation = useCallback(() => {
+    if (hasUnsavedChanges) {
+      const confirmLeave = window.confirm(
+        'Você tem alterações não salvas. Deseja realmente sair sem salvar?'
+      );
+      if (!confirmLeave) {
+        return;
+      }
+    }
+    navigate(-1);
+  }, [hasUnsavedChanges, navigate]);
+
+  // Função para cancelar alterações
+  const handleCancelChanges = useCallback(() => {
+    setItems(JSON.parse(JSON.stringify(originalItems)));
+    setTotalBudget(originalTotalBudget);
+    setHasUnsavedChanges(false);
+    toast.success('Alterações canceladas');
+  }, [originalItems, originalTotalBudget]);
 
   if (isLoading || isLoadingBudgetItems) {
     return (
@@ -177,17 +204,27 @@ export default function ProjectBudget() {
   };
 
   const handleSave = async () => {
-    await mutateAsync({
-      projectId: data?.id || '',
-      data: items.map((item) => ({
-        description: item.description,
-        quantity: item.quantity,
-        unit: item.unit,
-        unitQty: item.unitQty,
-        unitValue: item.unitValue,
-        adjustTotal: item.adjustTotal,
-      })),
-    });
+    try {
+      await mutateAsync({
+        projectId: data?.id || '',
+        data: items.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitQty: item.unitQty,
+          unitValue: item.unitValue,
+          adjustTotal: item.adjustTotal,
+        })),
+      });
+
+      // Atualizar o estado original após salvar com sucesso
+      setOriginalItems(JSON.parse(JSON.stringify(items)));
+      setOriginalTotalBudget(totalBudget);
+      setHasUnsavedChanges(false);
+      toast.success('Alterações salvas com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao salvar alterações');
+    }
   };
 
   const unitValue = Number(form.unitValue);
@@ -198,16 +235,28 @@ export default function ProjectBudget() {
       ? unitValue * quantity * unitQty
       : 0;
 
-  const ajusteTotal = budgetItems
+  // Calcular total dos itens que adicionam ao orçamento (adjustTotal = true) - usando estado local
+  const totalAdicionado = items
     .filter((item) => item.adjustTotal)
     .reduce((acc, item) => {
       const q = item.quantity || 0;
       const u = item.unitQty || 0;
       const v = item.unitValue || 0;
-      return acc + Math.max(0, q * u * v); // evita valores negativos ou inválidos
+      return acc + Math.max(0, q * u * v);
     }, 0);
 
-  const orcamentoBase = totalBudget + spentBudget - ajusteTotal;
+  // Calcular total dos itens que subtraem do orçamento (adjustTotal = false) - usando estado local
+  const totalSubtraido = items
+    .filter((item) => !item.adjustTotal)
+    .reduce((acc, item) => {
+      const q = item.quantity || 0;
+      const u = item.unitQty || 0;
+      const v = item.unitValue || 0;
+      return acc + Math.max(0, q * u * v);
+    }, 0);
+
+  // Orçamento base = orçamento atual + tudo que foi subtraído - tudo que foi adicionado
+  const orcamentoBase = totalBudget + totalSubtraido - totalAdicionado;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -216,7 +265,7 @@ export default function ProjectBudget() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={handleBackNavigation}
             className="hover:bg-slate-100"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -225,18 +274,29 @@ export default function ProjectBudget() {
           <h1 className="text-xl font-bold text-slate-900">
             Gerenciar Orçamento
           </h1>
-          <Button
-            onClick={handleSave}
-            disabled={isPending}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-          >
-            {isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
+          <div className="flex gap-3">
+            {hasUnsavedChanges && (
+              <Button
+                onClick={handleCancelChanges}
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50"
+              >
+                Cancelar
+              </Button>
             )}
-            Salvar
-          </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isPending || !hasUnsavedChanges}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-50"
+            >
+              {isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Salvar
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -283,7 +343,7 @@ export default function ProjectBudget() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Badge className="text-sm">
+            <Badge >
               Orçamento Base: R$ {orcamentoBase.toLocaleString('pt-BR')}
             </Badge>
             <Badge>Total: R$ {totalBudget.toLocaleString('pt-BR')}</Badge>
