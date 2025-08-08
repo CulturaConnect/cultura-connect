@@ -250,7 +250,7 @@ export default function ProjectRegistrationForm() {
       required_error: 'O campo de justificativa é obrigatório.',
     }),
     objetivos_gerais: z.string({
-      required_error: 'O campo de objetivos gerais é obrigatório.',
+      required_error: 'O campo Objetivos Gerais e específicos é obrigatório.',
     }),
     metas: z.string({ required_error: 'O campo de metas é obrigatório.' }),
 
@@ -1216,10 +1216,10 @@ export default function ProjectRegistrationForm() {
         name="objetivos_gerais"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Objetivos gerais</FormLabel>
+            <FormLabel>Objetivos Gerais e específicos</FormLabel>
             <FormControl>
               <Textarea
-                placeholder="Descreva os objetivos gerais..."
+                placeholder="Descreva os objetivos gerais e específicos..."
                 className="min-h-[120px]"
                 {...field}
               />

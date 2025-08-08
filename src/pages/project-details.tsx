@@ -48,8 +48,6 @@ export default function ProjectDetails() {
   const [tabs, setTabs] = useState<string>('details');
   const isOwner = user?.id === data?.company_id;
 
-  console.log(data)
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -223,7 +221,7 @@ export default function ProjectDetails() {
                 <CardContent className="p-6 space-y-6">
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">
-                      Objetivos Gerais
+                      Objetivos Gerais e específicos
                     </h3>
                     <p className="text-gray-600 text-sm leading-relaxed">
                       {data?.objetivos_gerais}

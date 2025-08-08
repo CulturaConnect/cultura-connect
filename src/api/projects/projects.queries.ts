@@ -66,7 +66,8 @@ export function useUpdateProjectMutation() {
   const navigate = useNavigate();
 
   return useMutation({
-    mutationFn: (data: { projectId: string; projectData: CreateProject }) =>
+    mutationFn: (data: { projectId: string; projectData: CreateProject | FormData }) =>
+
       updateProject(data.projectId, data.projectData),
     onSuccess: (data: Project) => {
       queryClient.invalidateQueries({ queryKey: ['project-by-id', data.id] });

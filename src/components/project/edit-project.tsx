@@ -19,13 +19,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Save, DollarSign, Activity, Loader2 } from 'lucide-react';
+import { Trash2, Save, DollarSign, Activity, Loader2, Paperclip, Plus, X } from 'lucide-react';
 import {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
   useChangeProjectVisibilityMutation,
 } from '@/api/projects/projects.queries';
-import { Project } from '@/api/projects/types';
+import { Project, Anexo } from '@/api/projects/types';
 import { CurrencyInput } from '../ui/currency-input';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -40,6 +40,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Globe } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ProjectActivity {
   id: string;
@@ -87,6 +89,7 @@ export default function EditProjectTab({
     project.orcamento_previsto?.toString() || '0',
   );
   const [isPublic, setIsPublic] = useState(project.is_public);
+  const [anexos, setAnexos] = useState<Anexo[]>(project.anexos || []);
 
   const { mutateAsync: deleteProject, isPending: isDeleting } =
     useDeleteProjectMutation();
@@ -104,21 +107,45 @@ export default function EditProjectTab({
   };
 
   const handleSave = async () => {
-    const data = {
-      orcamento_gasto: Number(budgetSpent),
-      orcamento_previsto: Number(budgetPlanned),
-      status: projectStatus,
-      is_public: isPublic,
-    };
+    const formData = new FormData();
+    
+    formData.append('orcamento_gasto', budgetSpent);
+    formData.append('orcamento_previsto', budgetPlanned);
+    formData.append('status', projectStatus);
+    formData.append('is_public', String(isPublic));
+    
+    // Adicionar anexos ao FormData
+    anexos.forEach((anexo, index) => {
+      if (anexo.descricao) {
+        formData.append(`anexos_descricao_${index}`, anexo.descricao);
+      }
+      if (anexo.arquivo) {
+        formData.append(`anexos_arquivo_${index}`, anexo.arquivo);
+      }
+    });
 
     const res = await mutateAsync({
       projectId: project.id,
-      projectData: data,
+      projectData: formData,
     });
 
     if (res) {
       setInitialTab('details');
     }
+  };
+
+  const addAnexo = () => {
+    setAnexos([...anexos, { descricao: '', arquivo: undefined }]);
+  };
+
+  const removeAnexo = (index: number) => {
+    setAnexos(anexos.filter((_, i) => i !== index));
+  };
+
+  const updateAnexo = (index: number, field: keyof Anexo, value: any) => {
+    const updatedAnexos = [...anexos];
+    updatedAnexos[index] = { ...updatedAnexos[index], [field]: value };
+    setAnexos(updatedAnexos);
   };
 
   const handleVisibilityChange = async () => {
@@ -258,6 +285,85 @@ export default function EditProjectTab({
                 onCheckedChange={handleVisibilityChange}
                 disabled={isChangingVisibility}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Anexos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Paperclip className="w-5 h-5" />
+              Anexos
+            </CardTitle>
+            <CardDescription>
+              Gerencie os anexos do projeto
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {anexos.map((anexo, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">Anexo {index + 1}</h4>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => removeAnexo(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`anexo-descricao-${index}`}>Descrição</Label>
+                    <Textarea
+                      id={`anexo-descricao-${index}`}
+                      placeholder="Descreva o anexo..."
+                      value={anexo.descricao || ''}
+                      onChange={(e) => updateAnexo(index, 'descricao', e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`anexo-arquivo-${index}`}>Arquivo</Label>
+                    {anexo.arquivo_url && !anexo.arquivo && (
+                      <div className="mb-2">
+                        <a
+                          href={anexo.arquivo_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm"
+                        >
+                          Arquivo atual: {anexo.arquivo_url.split('/').pop()}
+                        </a>
+                      </div>
+                    )}
+                    <Input
+                      id={`anexo-arquivo-${index}`}
+                      type="file"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          updateAnexo(index, 'arquivo', file);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addAnexo}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Anexo
+              </Button>
             </div>
           </CardContent>
         </Card>

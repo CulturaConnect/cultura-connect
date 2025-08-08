@@ -87,10 +87,12 @@ export async function getProjectById(projectId: string) {
   return response.data as Project;
 }
 
-export async function updateProject(projectId: string, data: UpdateProject) {
+export async function updateProject(projectId: string, data: UpdateProject | FormData) {
+  const isFormData = data instanceof FormData;
+  
   const response = await api.patch(`/projects/${projectId}`, data, {
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': isFormData ? 'multipart/form-data' : 'application/json',
     },
   });
 
