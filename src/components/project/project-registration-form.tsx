@@ -65,32 +65,37 @@ import { CanvasDrawer } from "./canvas-drawer";
 const modeloSchema = z.object({
   missao: z
     .string()
-    .min(1, "Informe a missão do projeto — esse campo é obrigatório."),
+    .optional(),
   visao: z
     .string()
-    .min(1, "Descreva a visão de futuro do projeto. Campo obrigatório."),
+    .optional(),
+
   mercado: z
     .string()
-    .min(1, "Informe o mercado em que o projeto está inserido."),
-  publico_alvo: z.string().min(1, "Descreva o público-alvo do projeto."),
-  receita: z.string().min(1, "Explique como o projeto gera receita."),
-  proposta_valor: z.string().min(1, "Detalhe a proposta de valor do projeto."),
+    .optional(),
+  publico_alvo: z
+    .string()
+    .optional(),
+  receita: z
+    .string()
+    .optional(),
+  proposta_valor: z
+    .string()
+    .optional(),
   retencao: z
     .string()
-    .min(1, "Descreva como o projeto pretende reter o público."),
+    .optional(),
 });
 
 const areaExecucaoSchema = z.object({
-  rua: z.string().min(1, "Rua é obrigatória"),
-  cep: z.string().min(8, "CEP deve ter pelo menos 8 dígitos"),
-  logradouro: z.string().min(1, "Logradouro é obrigatório"),
-  numero: z.string().min(1, "Número é obrigatório"),
+  rua: z.string().optional(),
+  cep: z.string().optional(),
+  logradouro: z.string().optional(),
+  numero: z.string().optional(),
   complemento: z.string().optional(),
-  bairro: z.string().min(1, "Bairro é obrigatório"),
-  cidade: z.string().min(1, "Cidade é obrigatória"),
-  observacoes: z.string({
-    required_error: "O campo de observações é obrigatório.",
-  }),
+  bairro: z.string().optional(),
+  cidade: z.string().optional(),
+  observacoes: z.string().optional(),
 });
 
 const cronogramaSchema = z
@@ -312,6 +317,34 @@ export default function ProjectRegistrationForm() {
       {
         message:
           "Pelo menos uma área de execução é obrigatória para projetos não digitais",
+        path: ["areas_execucao"],
+      }
+    )
+    .refine(
+      (data) => {
+        if (data.is_digital) {
+          return true; // Se é digital, não precisa validar campos das áreas
+        }
+        
+        // Para projetos não digitais, validar campos obrigatórios das áreas
+        if (!data.areas_execucao || data.areas_execucao.length === 0) {
+          return false;
+        }
+        
+        return data.areas_execucao.every((area) => {
+          return (
+            area.rua && area.rua.trim().length > 0 &&
+            area.cep && area.cep.trim().length >= 8 &&
+            area.logradouro && area.logradouro.trim().length > 0 &&
+            area.numero && area.numero.trim().length > 0 &&
+            area.bairro && area.bairro.trim().length > 0 &&
+            area.cidade && area.cidade.trim().length > 0 &&
+            area.observacoes && area.observacoes.trim().length > 0
+          );
+        });
+      },
+      {
+        message: "Todos os campos das áreas de execução são obrigatórios para projetos não digitais",
         path: ["areas_execucao"],
       }
     );
@@ -1863,13 +1896,9 @@ export default function ProjectRegistrationForm() {
                   {isPending && (
                     <Loader2 className="animate-spin h-4 w-4 mr-2" />
                   )}
-                  {currentStep < totalSteps ? (
-                    <span className="">Avançar</span>
-                  ) : (
-                    <span className="">Finalizar</span>
-                  )}
+                  <span className="">Avançar</span>
 
-                  {!isPending && currentStep < totalSteps ? (
+                  {!isPending ? (
                     <ChevronRight className="h-4 w-4" />
                   ) : null}
                 </Button>
