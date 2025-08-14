@@ -48,6 +48,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDateToPTBR } from '@/utils/date';
 
 export interface ProjectActivity {
   id: string;
@@ -324,9 +325,7 @@ export default function ProjectActivities() {
 
     if (isOutsideProjectRange) {
       toast.error('Datas fora do período do projeto', {
-        description: `A atividade deve estar entre ${projectStart.toLocaleDateString(
-          'pt-BR',
-        )} e ${projectEnd.toLocaleDateString('pt-BR')}`,
+        description: `A atividade deve estar entre ${formatDateToPTBR(projectStart)} e ${formatDateToPTBR(projectEnd)}`,
       });
       return;
     }
@@ -795,7 +794,7 @@ export default function ProjectActivities() {
                         htmlFor="evidences"
                         className="text-slate-700 font-medium"
                       >
-                        Evidências
+                        Evidências (máximo 3 anexos, 10MB cada)
                       </Label>
                       <Input
                         id="evidences"
@@ -805,6 +804,23 @@ export default function ProjectActivities() {
                           const files = e.target.files
                             ? Array.from(e.target.files)
                             : [];
+                          
+                          // Verificar limite de 3 anexos
+                          const totalFiles = activityForm.evidences.length + files.length;
+                          if (totalFiles > 3) {
+                            alert('Máximo de 3 anexos permitidos por atividade');
+                            e.target.value = '';
+                            return;
+                          }
+                          
+                          // Verificar tamanho de cada arquivo (10MB)
+                          const invalidFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+                          if (invalidFiles.length > 0) {
+                            alert('Cada arquivo deve ter no máximo 10MB');
+                            e.target.value = '';
+                            return;
+                          }
+                          
                           setActivityForm({
                             ...activityForm,
                             evidences: [...activityForm.evidences, ...files],
@@ -812,6 +828,7 @@ export default function ProjectActivities() {
                           e.target.value = '';
                         }}
                         className="mt-2 border-slate-200"
+                        disabled={activityForm.evidences.length >= 3}
                       />
                       {activityForm?.evidences?.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
@@ -882,15 +899,13 @@ export default function ProjectActivities() {
                         </Badge>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-200">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-slate-200">
                         <div className="flex items-center gap-2 text-slate-600">
                           <Calendar className="w-4 h-4 text-blue-600" />
                           <span className="text-sm">Início:</span>
                           <span className="font-semibold text-slate-900">
                             {activity.start
-                              ? parseLocalDate(
-                                  activity.start,
-                                ).toLocaleDateString('pt-BR')
+                              ? formatDateToPTBR(activity.start)
                               : 'Não definido'}
                           </span>
                         </div>
@@ -899,18 +914,23 @@ export default function ProjectActivities() {
                           <span className="text-sm">Término:</span>
                           <span className="font-semibold text-slate-900">
                             {activity.end
-                              ? parseLocalDate(activity.end).toLocaleDateString(
-                                  'pt-BR',
-                                )
+                              ? formatDateToPTBR(activity.end)
                               : 'Não definido'}
                           </span>
                         </div>
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Target className="w-4 h-4 text-green-600" />
+                          <span className="text-sm">Anexos:</span>
+                          <span className="font-semibold text-slate-900">
+                            {activity?.evidences?.length || 0}/3
+                          </span>
+                        </div>
                         {activity?.evidences?.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-slate-700">
+                          <div className="md:col-span-3">
+                            <p className="text-sm font-medium text-slate-700 mb-2">
                               Evidências:
                             </p>
-                            <div className="flex flex-wrap gap-2 mt-1">
+                            <div className="flex flex-wrap gap-2">
                               {activity?.evidences?.map((ev, i) => (
                                 <EvidencePreview key={i} evidence={ev} />
                               ))}

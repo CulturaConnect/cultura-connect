@@ -40,7 +40,6 @@ export function ProjectsGrid({ filterBy = 'all' }: ProjectsGridProps) {
             key={project.id}
             id={project.id}
             title={project.nome}
-            subtitle={project.titulo_oficial}
             progress={getProjectProgress(project)}
             imageUrl={project?.imagem_url || ''}
           />

@@ -20,14 +20,7 @@ import { useAuth } from '@/contexts/auth';
 import { censurarDocumento } from '@/utils/helpers';
 import EditProjectTab from '@/components/project/edit-project';
 import { useState } from 'react';
-
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
+import { formatDateToPTBR } from '@/utils/date';
 
 function getSegmentColor(segmento: string) {
   const colors: Record<string, string> = {
@@ -90,7 +83,7 @@ export default function ProjectDetails() {
                       <div className="w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
                         <img
                           src={data?.imagem_url || '/placeholder.svg'}
-                          alt={data?.titulo_oficial}
+                          alt={data?.nome}
                           width={128}
                           height={128}
                           className="w-full h-full object-cover"
@@ -102,7 +95,7 @@ export default function ProjectDetails() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-3 flex-wrap">
                           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
-                            {data?.titulo_oficial}
+                            {data?.nome}
                           </h1>
                           <Badge
                             className={`${getSegmentColor(
@@ -120,7 +113,7 @@ export default function ProjectDetails() {
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            {formatDate(data?.inicio)} - {formatDate(data?.fim)}
+                            {formatDateToPTBR(data?.inicio)} - {formatDateToPTBR(data?.fim)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">

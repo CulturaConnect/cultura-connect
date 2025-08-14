@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useMemo } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useFieldArray, useForm } from 'react-hook-form';
-import { z, ZodSchema } from 'zod';
+import { useEffect, useState, useMemo } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useFieldArray, useForm } from "react-hook-form";
+import { z, ZodSchema } from "zod";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,15 +17,15 @@ import {
   Repeat,
   UploadIcon,
   Loader2,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Drawer,
   DrawerContent,
@@ -33,7 +33,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@/components/ui/drawer';
+} from "@/components/ui/drawer";
 import {
   Form,
   FormControl,
@@ -42,234 +42,236 @@ import {
   FormLabel,
   FormDescription,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { useGetCompanyUsers } from '@/api/companies/companies.queries';
-import { useAuth } from '@/contexts/auth';
-import { useCreateProjectMutation } from '@/api/projects/projects.queries';
-import { useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/sonner';
-import { CurrencyInput } from '../ui/currency-input';
-import { CanvasDrawer } from './canvas-drawer';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { useGetCompanyUsers } from "@/api/companies/companies.queries";
+import { useAuth } from "@/contexts/auth";
+import { useCreateProjectMutation } from "@/api/projects/projects.queries";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/sonner";
+import { CurrencyInput } from "../ui/currency-input";
+import { CanvasDrawer } from "./canvas-drawer";
 
 const modeloSchema = z.object({
   missao: z
     .string()
-    .min(1, 'Informe a missão do projeto — esse campo é obrigatório.'),
+    .min(1, "Informe a missão do projeto — esse campo é obrigatório."),
   visao: z
     .string()
-    .min(1, 'Descreva a visão de futuro do projeto. Campo obrigatório.'),
+    .min(1, "Descreva a visão de futuro do projeto. Campo obrigatório."),
   mercado: z
     .string()
-    .min(1, 'Informe o mercado em que o projeto está inserido.'),
-  publico_alvo: z.string().min(1, 'Descreva o público-alvo do projeto.'),
-  receita: z.string().min(1, 'Explique como o projeto gera receita.'),
-  proposta_valor: z.string().min(1, 'Detalhe a proposta de valor do projeto.'),
+    .min(1, "Informe o mercado em que o projeto está inserido."),
+  publico_alvo: z.string().min(1, "Descreva o público-alvo do projeto."),
+  receita: z.string().min(1, "Explique como o projeto gera receita."),
+  proposta_valor: z.string().min(1, "Detalhe a proposta de valor do projeto."),
   retencao: z
     .string()
-    .min(1, 'Descreva como o projeto pretende reter o público.'),
+    .min(1, "Descreva como o projeto pretende reter o público."),
 });
 
 const areaExecucaoSchema = z.object({
-  rua: z.string().min(1, 'Rua é obrigatória'),
-  cep: z.string().min(8, 'CEP deve ter pelo menos 8 dígitos'),
-  logradouro: z.string().min(1, 'Logradouro é obrigatório'),
-  numero: z.string().min(1, 'Número é obrigatório'),
+  rua: z.string().min(1, "Rua é obrigatória"),
+  cep: z.string().min(8, "CEP deve ter pelo menos 8 dígitos"),
+  logradouro: z.string().min(1, "Logradouro é obrigatório"),
+  numero: z.string().min(1, "Número é obrigatório"),
   complemento: z.string().optional(),
-  bairro: z.string().min(1, 'Bairro é obrigatório'),
-  cidade: z.string().min(1, 'Cidade é obrigatória'),
+  bairro: z.string().min(1, "Bairro é obrigatório"),
+  cidade: z.string().min(1, "Cidade é obrigatória"),
   observacoes: z.string({
-    required_error: 'O campo de observações é obrigatório.',
+    required_error: "O campo de observações é obrigatório.",
   }),
 });
 
 const cronogramaSchema = z
   .object({
-    titulo: z.string().min(1, 'Título é obrigatório'),
-    descricao: z.string().min(1, 'Descrição é obrigatória'),
-    status: z.string().min(1, 'Status é obrigatório'),
-    inicio: z.string().min(1, 'Data de início é obrigatória'),
-    fim: z.string().min(1, 'Data de fim é obrigatória'),
+    titulo: z.string().min(1, "Título é obrigatório"),
+    descricao: z.string().min(1, "Descrição é obrigatória"),
+    status: z.string().min(1, "Status é obrigatório"),
+    inicio: z.string().min(1, "Data de início é obrigatória"),
+    fim: z.string().min(1, "Data de fim é obrigatória"),
   })
   .refine((data) => new Date(data.fim) >= new Date(data.inicio), {
-    message: 'Data de término deve ser igual ou posterior à de início',
-    path: ['fim'],
+    message: "Data de término deve ser igual ou posterior à de início",
+    path: ["fim"],
   });
 
 const equipeSchema = z.object({
-  nome: z.string().min(1, 'Nome é obrigatório'),
-  funcao: z.string().min(1, 'Função é obrigatória'),
-  cpf_cnpj: z.string().min(11, 'CPF/CNPJ inválido'),
+  nome: z.string().min(1, "Nome é obrigatório"),
+  funcao: z.string().min(1, "Função é obrigatória"),
+  cpf_cnpj: z.string().min(11, "CPF/CNPJ inválido"),
 });
 
 const modelCards = [
   {
-    id: 'missao',
-    area: 'area-missao',
-    title: 'Missão',
-    description: 'O propósito e razão de ser da empresa',
+    id: "missao",
+    area: "area-missao",
+    title: "Missão",
+    description: "O propósito e razão de ser da empresa",
     icon: Target,
-    color: 'bg-blue-100 text-blue-800',
-    content: '...',
+    color: "bg-blue-100 text-blue-800",
+    content: "...",
   },
   {
-    id: 'visao',
-    area: 'area-visao',
-    title: 'Visão',
-    description: 'As metas a longo prazo',
+    id: "visao",
+    area: "area-visao",
+    title: "Visão",
+    description: "As metas a longo prazo",
     icon: Eye,
-    color: 'bg-green-100 text-green-800',
-    content: '...',
+    color: "bg-green-100 text-green-800",
+    content: "...",
   },
   {
-    id: 'mercado',
-    area: 'area-mercado',
-    title: 'Mercado',
-    description: 'A posição da empresa perante a concorrência',
+    id: "mercado",
+    area: "area-mercado",
+    title: "Mercado",
+    description: "A posição da empresa perante a concorrência",
     icon: TrendingUp,
-    color: 'bg-orange-100 text-orange-800',
-    content: '...',
+    color: "bg-orange-100 text-orange-800",
+    content: "...",
   },
   {
-    id: 'publico_alvo',
-    area: 'area-publico',
-    title: 'Público-alvo',
-    description: 'Os clientes que a empresa atende',
+    id: "publico_alvo",
+    area: "area-publico",
+    title: "Público-alvo",
+    description: "Os clientes que a empresa atende",
     icon: Users,
-    color: 'bg-pink-100 text-pink-800',
-    content: '...',
+    color: "bg-pink-100 text-pink-800",
+    content: "...",
   },
   {
-    id: 'receita',
-    area: 'area-receita',
-    title: 'Receita',
-    description: 'Rentabilização do comportamento',
+    id: "receita",
+    area: "area-receita",
+    title: "Receita",
+    description: "Rentabilização do comportamento",
     icon: DollarSign,
-    color: 'bg-blue-100 text-blue-800',
-    content: '...',
+    color: "bg-blue-100 text-blue-800",
+    content: "...",
   },
   {
-    id: 'proposta_valor',
-    area: 'area-proposta',
-    title: 'Proposta de valor',
-    description: 'Benefícios e diferenciais únicos',
+    id: "proposta_valor",
+    area: "area-proposta",
+    title: "Proposta de valor",
+    description: "Benefícios e diferenciais únicos",
     icon: Gift,
-    color: 'bg-orange-100 text-orange-800',
-    content: '...',
+    color: "bg-orange-100 text-orange-800",
+    content: "...",
   },
   {
-    id: 'retencao',
-    area: 'area-retencao',
-    title: 'Retenção',
-    description: 'O que fazer para os usuários retornarem',
+    id: "retencao",
+    area: "area-retencao",
+    title: "Retenção",
+    description: "O que fazer para os usuários retornarem",
     icon: Repeat,
-    color: 'bg-green-100 text-green-800',
-    content: '...',
+    color: "bg-green-100 text-green-800",
+    content: "...",
   },
 ];
 
 export default function ProjectRegistrationForm() {
   const { user } = useAuth();
-  const isCompany = user?.tipo === 'company';
+  const isCompany = user?.tipo === "company";
+
+  // Funções de formatação de data importadas de @/utils/date
 
   const MAX_FILE_SIZE_MB = 10;
   const ACCEPTED_IMAGE_TYPES = [
-    'image/png',
-    'image/jpeg',
-    'image/jpg',
-    'image/svg+xml',
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/svg+xml",
   ];
 
   const rawSchema = z.object({
     nome: z
-      .string({ required_error: 'O nome do projeto é obrigatório.' })
-      .min(2, 'O nome do projeto precisa ter no mínimo 2 caracteres.'),
+      .string({ required_error: "O nome do projeto é obrigatório." })
+      .min(2, "O nome do projeto precisa ter no mínimo 2 caracteres."),
 
     segmento: z
-      .string({ required_error: 'Por favor, selecione um segmento.' })
-      .min(1, 'Por favor, selecione um segmento.'),
+      .string({ required_error: "Por favor, selecione um segmento." })
+      .min(1, "Por favor, selecione um segmento."),
 
     inicio: z
-      .string({ required_error: 'A data de início é obrigatória.' })
-      .min(1, 'A data de início é obrigatória.'),
+      .string({ required_error: "A data de início é obrigatória." })
+      .min(1, "A data de início é obrigatória."),
 
     fim: z
-      .string({ required_error: 'A data final é obrigatória.' })
-      .min(1, 'A data final é obrigatória.'),
+      .string({ required_error: "A data final é obrigatória." })
+      .min(1, "A data final é obrigatória."),
 
     is_public: z.boolean().default(true),
 
     imagem: z
       .instanceof(File, {
-        message: 'É necessário enviar uma imagem para o projeto.',
+        message: "É necessário enviar uma imagem para o projeto.",
       })
       .refine(
         (file) => file.size <= MAX_FILE_SIZE_MB * 1024 * 1024,
-        `O arquivo da imagem deve ser menor que ${MAX_FILE_SIZE_MB}MB.`,
+        `O arquivo da imagem deve ser menor que ${MAX_FILE_SIZE_MB}MB.`
       )
       .refine(
         (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
-        'Formato de imagem inválido. Use PNG, JPG, JPEG ou SVG.',
+        "Formato de imagem inválido. Use PNG, JPG, JPEG ou SVG."
       )
       .optional(),
 
-    modelo: modeloSchema,
+    modelo: modeloSchema.optional(),
+    is_digital: z.boolean().default(false),
 
-    titulo_oficial: z
-      .string({ required_error: 'O título oficial do projeto é obrigatório.' })
-      .min(2, 'O título oficial precisa ter no mínimo 2 caracteres.'),
+    areas_execucao: z.array(areaExecucaoSchema).optional(),
 
-    areas_execucao: z
-      .array(areaExecucaoSchema)
-      .min(1, 'É necessário adicionar pelo menos uma área de execução.'),
-
-    resumo: z.string({ required_error: 'O resumo do projeto é obrigatório.' }),
+    resumo: z.string({ required_error: "O resumo do projeto é obrigatório." }),
     apresentacao: z.string({
-      required_error: 'O campo de apresentação é obrigatório.',
+      required_error: "O campo de apresentação é obrigatório.",
     }),
     historico: z.string({
-      required_error: 'O campo de histórico é obrigatório.',
+      required_error: "O campo de histórico é obrigatório.",
     }),
 
     descricao_proposta: z.string({
-      required_error: 'O campo de descrição da proposta é obrigatório.',
+      required_error: "O campo de descrição da proposta é obrigatório.",
     }),
     descricao_contrapartida: z.string({
-      required_error: 'O campo de descrição da contrapartida é obrigatório.',
+      required_error: "O campo de descrição da contrapartida é obrigatório.",
     }),
     justificativa: z.string({
-      required_error: 'O campo de justificativa é obrigatório.',
+      required_error: "O campo de justificativa é obrigatório.",
     }),
     objetivos_gerais: z.string({
-      required_error: 'O campo Objetivos Gerais e específicos é obrigatório.',
+      required_error: "O campo Objetivos Gerais e específicos é obrigatório.",
     }),
-    metas: z.string({ required_error: 'O campo de metas é obrigatório.' }),
+    metas: z.string({ required_error: "O campo de metas é obrigatório." }),
 
     cronograma_atividades: z
-      .array(cronogramaSchema)
-      .min(1, 'É necessário adicionar pelo menos uma atividade ao cronograma.'),
-
+      .array(cronogramaSchema),
     anexos: z
       .array(
         z.object({
           descricao: z.string({
-            required_error: 'A descrição do anexo é obrigatória.',
+            required_error: "A descrição do anexo é obrigatória.",
           }),
-          arquivo: z.instanceof(File, {
-            message: 'É necessário selecionar um arquivo.',
-          }),
-        }),
+          arquivo: z
+            .instanceof(File, {
+              message: "É necessário selecionar um arquivo.",
+            })
+            .refine(
+              (file) => file.size <= 10 * 1024 * 1024,
+              "Arquivo deve ter no máximo 10MB"
+            ),
+        })
       )
-      .min(1, 'É necessário adicionar pelo menos um anexo.'),
+      .max(10, "Máximo de 10 anexos permitidos")
+      .optional(),
 
     orcamento_previsto: z.string().optional(),
 
@@ -291,114 +293,109 @@ export default function ProjectRegistrationForm() {
       is_public: true,
     })
     .refine((data) => new Date(data.fim) >= new Date(data.inicio), {
-      message: 'A data final não pode ser anterior à data de início.',
-      path: ['fim'],
+      message: "A data final não pode ser anterior à data de início.",
+      path: ["fim"],
     });
 
-  const baseSchema = rawSchema.refine(
-    (data) => new Date(data.fim) >= new Date(data.inicio),
-    {
-      message: 'Data de término deve igual ou posterior à de início',
-      path: ['fim'],
-    },
-  );
+  const baseSchema = rawSchema
+    .refine((data) => new Date(data.fim) >= new Date(data.inicio), {
+      message: "Data de término deve igual ou posterior à de início",
+      path: ["fim"],
+    })
+    .refine(
+      (data) => {
+        if (data.is_digital) {
+          return true; // Se é digital, não precisa de áreas de execução
+        }
+        return data.areas_execucao && data.areas_execucao.length > 0;
+      },
+      {
+        message:
+          "Pelo menos uma área de execução é obrigatória para projetos não digitais",
+        path: ["areas_execucao"],
+      }
+    );
 
   type FormData = z.infer<typeof baseSchema>;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [legalResponsible, setLegalResponsible] = useState({
-    responsibleName: '',
-    phone: '',
-    email: '',
+    responsibleName: "",
+    phone: "",
+    email: "",
   });
 
   const [primaryResponsible, setPrimaryResponsible] = useState({
-    cpf: '',
+    cpf: "",
   });
 
   const form = useForm<FormData>({
     resolver: zodResolver(baseSchema),
 
     defaultValues: {
-      nome: '',
-      segmento: '',
-      inicio: '',
-      fim: '',
+      nome: "",
+      segmento: "",
+      inicio: "",
+      fim: "",
       is_public: true,
+      is_digital: false,
       modelo: {
-        missao: '',
-        visao: '',
-        mercado: '',
-        publico_alvo: '',
-        receita: '',
-        proposta_valor: '',
-        retencao: '',
+        missao: "",
+        visao: "",
+        mercado: "",
+        publico_alvo: "",
+        receita: "",
+        proposta_valor: "",
+        retencao: "",
       },
-      titulo_oficial: '',
       areas_execucao: [
         {
-          rua: '',
-          cep: '',
-          logradouro: '',
-          numero: '',
-          complemento: '',
-          bairro: '',
-          cidade: '',
-          observacoes: '',
+          rua: "",
+          cep: "",
+          logradouro: "",
+          numero: "",
+          complemento: "",
+          bairro: "",
+          cidade: "",
+          observacoes: "",
         },
       ],
-      resumo: '',
-      apresentacao: '',
-      historico: '',
-      descricao_proposta: '',
-      descricao_contrapartida: '',
-      justificativa: '',
-      objetivos_gerais: '',
-      metas: '',
-      orcamento_previsto: '',
-      orcamento_gasto: '',
-      cronograma_atividades: [
-        {
-          titulo: '',
-          descricao: '',
-          status: '',
-          inicio: '',
-          fim: '',
-        },
-      ],
-      anexos: [
-        {
-          descricao: '',
-
-          arquivo: undefined as unknown as File,
-        },
-      ],
-      responsavel_principal_id: '',
+      resumo: "",
+      apresentacao: "",
+      historico: "",
+      descricao_proposta: "",
+      descricao_contrapartida: "",
+      justificativa: "",
+      objetivos_gerais: "",
+      metas: "",
+      orcamento_previsto: "",
+      orcamento_gasto: "",
+      cronograma_atividades: [],
+      anexos: [],
+      responsavel_principal_id: "",
       equipe: [
         {
-          nome: '',
-          funcao: '',
-          cpf_cnpj: '',
+          nome: "",
+          funcao: "",
+          cpf_cnpj: "",
         },
       ],
-      responsavel_legal_id: '',
+      responsavel_legal_id: "",
     },
   });
 
-  console.log(form.formState.errors);
-
-  const imageFile = form.watch('imagem');
+  const imageFile = form.watch("imagem");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const { control } = form;
 
   const navigate = useNavigate();
 
-  const { data } = useGetCompanyUsers(user?.id || '');
+  const { data } = useGetCompanyUsers(user?.id || "");
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: 'cronograma_atividades',
+    name: "cronograma_atividades",
   });
 
   const {
@@ -407,7 +404,7 @@ export default function ProjectRegistrationForm() {
     remove: removeArea,
   } = useFieldArray({
     control,
-    name: 'areas_execucao',
+    name: "areas_execucao",
   });
 
   const {
@@ -416,11 +413,11 @@ export default function ProjectRegistrationForm() {
     remove: removeAnexo,
   } = useFieldArray({
     control,
-    name: 'anexos',
+    name: "anexos",
   });
 
   async function handleCepBlur(index: number, value: string) {
-    const cep = value.replace(/\D/g, '');
+    const cep = value.replace(/\D/g, "");
     if (cep.length !== 8) return;
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -429,27 +426,27 @@ export default function ProjectRegistrationForm() {
       if (data.erro) return;
       form.setValue(
         `areas_execucao.${index}.logradouro`,
-        data.logradouro || '',
+        data.logradouro || "",
         {
           shouldValidate: true,
-        },
+        }
       );
-      form.setValue(`areas_execucao.${index}.bairro`, data.bairro || '', {
+      form.setValue(`areas_execucao.${index}.bairro`, data.bairro || "", {
         shouldValidate: true,
       });
-      form.setValue(`areas_execucao.${index}.cidade`, data.localidade || '', {
+      form.setValue(`areas_execucao.${index}.cidade`, data.localidade || "", {
         shouldValidate: true,
       });
-      form.setValue(`areas_execucao.${index}.rua`, data.logradouro || '', {
+      form.setValue(`areas_execucao.${index}.rua`, data.logradouro || "", {
         shouldValidate: true,
       });
       form.setValue(
         `areas_execucao.${index}.complemento`,
-        data.complemento || '',
-        { shouldValidate: true },
+        data.complemento || "",
+        { shouldValidate: true }
       );
     } catch {
-      toast.error('Erro ao buscar CEP. Verifique o número e tente novamente.');
+      toast.error("Erro ao buscar CEP. Verifique o número e tente novamente.");
     }
   }
 
@@ -459,7 +456,7 @@ export default function ProjectRegistrationForm() {
     remove: removeEquipe,
   } = useFieldArray({
     control,
-    name: 'equipe',
+    name: "equipe",
   });
 
   const stepSchema: Record<number, ZodSchema> = isCompany
@@ -468,7 +465,6 @@ export default function ProjectRegistrationForm() {
         2: rawSchema.pick({ modelo: true }),
         3: rawSchema.pick({ responsavel_legal_id: true }),
         4: rawSchema.pick({
-          titulo_oficial: true,
           areas_execucao: true,
           resumo: true,
           apresentacao: true,
@@ -491,7 +487,6 @@ export default function ProjectRegistrationForm() {
         1: step1Schema,
         2: rawSchema.pick({ modelo: true }),
         3: rawSchema.pick({
-          titulo_oficial: true,
           areas_execucao: true,
           resumo: true,
           apresentacao: true,
@@ -520,7 +515,7 @@ export default function ProjectRegistrationForm() {
         company_id: user?.id,
         cronograma_atividades: values.cronograma_atividades.map((activity) => ({
           ...activity,
-          acompanhamento: '',
+          acompanhamento: "",
           evidencias: [],
         })),
 
@@ -531,11 +526,11 @@ export default function ProjectRegistrationForm() {
       });
 
       if (res) {
-        navigate('/', { replace: true });
+        navigate("/", { replace: true });
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
-      toast.error(error.response?.data?.error || 'Erro ao criar projeto.');
+      toast.error(error.response?.data?.error || "Erro ao criar projeto.");
     }
   };
 
@@ -565,18 +560,18 @@ export default function ProjectRegistrationForm() {
           return `• ${e.message}`;
         });
 
-        const errorMessage = formattedErrors.join('\n');
+        const errorMessage = formattedErrors.join("\n");
 
-        toast.error('Erros na validação:', {
+        toast.error("Erros na validação:", {
           description: (
             <div className="text-sm whitespace-pre-wrap">{errorMessage}</div>
           ),
           duration: 5000,
           dismissible: true,
-          position: 'top-right',
+          position: "top-right",
         });
       } else {
-        toast.error('Erro inesperado na validação.');
+        toast.error("Erro inesperado na validação.");
         console.error(err);
       }
     }
@@ -596,10 +591,10 @@ export default function ProjectRegistrationForm() {
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
                 step === currentStep
-                  ? 'bg-blue-500 text-white scale-110 shadow-md'
+                  ? "bg-blue-500 text-white scale-110 shadow-md"
                   : step < currentStep
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-600'
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-200 text-gray-600"
               }`}
             >
               {step}
@@ -607,12 +602,12 @@ export default function ProjectRegistrationForm() {
             {index < totalSteps - 1 && (
               <div
                 className={`hidden sm:block w-12 h-0.5 transition-colors duration-200 ${
-                  step < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                  step < currentStep ? "bg-green-500" : "bg-gray-200"
                 }`}
               />
             )}
           </div>
-        ),
+        )
       )}
     </div>
   );
@@ -669,8 +664,8 @@ export default function ProjectRegistrationForm() {
           <FormItem>
             <FormLabel>Visibilidade</FormLabel>
             <Select
-              onValueChange={(v) => field.onChange(v === 'public')}
-              defaultValue={field.value ? 'public' : 'private'}
+              onValueChange={(v) => field.onChange(v === "public")}
+              defaultValue={field.value ? "public" : "private"}
             >
               <FormControl>
                 <SelectTrigger>
@@ -698,20 +693,22 @@ export default function ProjectRegistrationForm() {
                 <Input
                   type="date"
                   {...field}
+                  value={field.value}
                   onChange={(e) => {
-                    const endDate = form.getValues('fim');
+                    const endDate = form.getValues("fim");
                     if (new Date(e.target.value) > new Date(endDate)) {
                       toast.error(
-                        'A data de início não pode ser posterior à data de fim.',
-                        { duration: 3000, position: 'top-right' },
+                        "A data de início não pode ser posterior à data de fim.",
+                        { duration: 3000, position: "top-right" }
                       );
                       return;
                     } else {
                       field.onChange(e);
-                      form.clearErrors('inicio');
-                      form.clearErrors('fim');
+                      form.clearErrors("inicio");
+                      form.clearErrors("fim");
                     }
                   }}
+                  placeholder="dd/mm/aaaa"
                 />
               </FormControl>
               <FormMessage />
@@ -729,22 +726,24 @@ export default function ProjectRegistrationForm() {
                 <Input
                   type="date"
                   {...field}
+                  value={field.value}
                   onChange={(e) => {
-                    const startDate = form.getValues('inicio');
+                    const startDate = form.getValues("inicio");
                     if (new Date(e.target.value) < new Date(startDate)) {
                       toast.error(
-                        'A data de fim não pode ser anterior à data de início.',
-                        { duration: 3000, position: 'top-right' },
+                        "A data de fim não pode ser anterior à data de início.",
+                        { duration: 3000, position: "top-right" }
                       );
 
                       return;
                     } else {
                       field.onChange(e);
 
-                      form.clearErrors('inicio');
-                      form.clearErrors('fim');
+                      form.clearErrors("inicio");
+                      form.clearErrors("fim");
                     }
                   }}
+                  placeholder="dd/mm/aaaa"
                 />
               </FormControl>
               <FormMessage />
@@ -769,7 +768,7 @@ export default function ProjectRegistrationForm() {
               onChange={(e) => {
                 const selectedFile = e.target.files?.[0];
                 if (selectedFile) {
-                  form.setValue('imagem', selectedFile, {
+                  form.setValue("imagem", selectedFile, {
                     shouldValidate: true,
                   });
                 }
@@ -798,7 +797,7 @@ export default function ProjectRegistrationForm() {
               onChange={(e) => {
                 const selectedFile = e.target.files?.[0];
                 if (selectedFile) {
-                  form.setValue('imagem', selectedFile, {
+                  form.setValue("imagem", selectedFile, {
                     shouldValidate: true,
                   });
                 }
@@ -812,6 +811,13 @@ export default function ProjectRegistrationForm() {
 
   const renderStep2 = () => (
     <div className="space-y-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p className="text-blue-800 text-sm">
+          <strong>Atenção:</strong> O preenchimento do modelo de negócio é
+          opcional. Você pode pular esta etapa e continuar com o cadastro do
+          projeto.
+        </p>
+      </div>
       <div>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-areas-canvas max-w-5xl mx-auto px-4">
           {modelCards.map((model) => {
@@ -906,7 +912,7 @@ export default function ProjectRegistrationForm() {
 
   const renderStep4 = () => (
     <div className="space-y-6">
-      <FormField
+      {/* <FormField
         control={form.control}
         name="titulo_oficial"
         render={({ field }) => (
@@ -918,7 +924,7 @@ export default function ProjectRegistrationForm() {
             <FormMessage />
           </FormItem>
         )}
-      />
+      /> */}
 
       <FormField
         control={form.control}
@@ -976,37 +982,165 @@ export default function ProjectRegistrationForm() {
 
       <FormField
         control={form.control}
-        name="areas_execucao"
+        name="is_digital"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Área(s) de execução</FormLabel>
+          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+            <FormControl>
+              <Checkbox
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+            <div className="space-y-1 leading-none">
+              <FormLabel>Projeto Digital</FormLabel>
+              <FormDescription>
+                Marque esta opção se o projeto for executado digitalmente (sem
+                necessidade de áreas físicas de execução).
+              </FormDescription>
+            </div>
+          </FormItem>
+        )}
+      />
 
-            <div className="space-y-4">
-              {areaFields.map((areaField, index) => (
-                <div
-                  key={areaField.id}
-                  className="flex flex-col gap-4 items-start border p-4 rounded-md"
-                >
-                  <h5>Área {index + 1}</h5>
-                  <div className="grid grid-cols-2 gap-4 w-full">
+      {!form.watch("is_digital") && (
+        <FormField
+          control={form.control}
+          name="areas_execucao"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Área(s) de execução</FormLabel>
+
+              <div className="space-y-4">
+                {areaFields.map((areaField, index) => (
+                  <div
+                    key={areaField.id}
+                    className="flex flex-col gap-4 items-start border p-4 rounded-md"
+                  >
+                    <h5>Área {index + 1}</h5>
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.cep`}
+                        render={({ field }) => (
+                          <FormItem className="w-full">
+                            <FormLabel>CEP</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="CEP"
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  handleCepBlur(index, e.target.value);
+                                }}
+                                onBlur={(e) => {
+                                  field.onBlur();
+                                  handleCepBlur(index, e.target.value);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.rua`}
+                        render={({ field }) => (
+                          <FormItem className="w-full">
+                            <FormLabel>Rua</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Rua" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.logradouro`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Logradouro</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Logradouro" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.numero`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Número" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     <FormField
                       control={form.control}
-                      name={`areas_execucao.${index}.cep`}
+                      name={`areas_execucao.${index}.complemento`}
                       render={({ field }) => (
                         <FormItem className="w-full">
-                          <FormLabel>CEP</FormLabel>
+                          <FormLabel>Complemento</FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder="CEP"
+                            <Input placeholder="Complemento" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.bairro`}
+                        render={({ field }) => (
+                          <FormItem className="w-full">
+                            <FormLabel>Bairro</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Bairro" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.cidade`}
+                        render={({ field }) => (
+                          <FormItem className="w-full">
+                            <FormLabel>Cidade</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Cidade" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name={`areas_execucao.${index}.observacoes`}
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Observações</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Observações sobre a área de execução..."
+                              className="min-h-[100px]"
                               {...field}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                handleCepBlur(index, e.target.value);
-                              }}
-                              onBlur={(e) => {
-                                field.onBlur();
-                                handleCepBlur(index, e.target.value);
-                              }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1014,144 +1148,40 @@ export default function ProjectRegistrationForm() {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name={`areas_execucao.${index}.rua`}
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Rua</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Rua" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 w-full">
-                    <FormField
-                      control={form.control}
-                      name={`areas_execucao.${index}.logradouro`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Logradouro</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Logradouro" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name={`areas_execucao.${index}.numero`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Número</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Número" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name={`areas_execucao.${index}.complemento`}
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Complemento</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Complemento" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    {areaFields.length > 1 && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeArea(index)}
+                      >
+                        Remover área
+                      </Button>
                     )}
-                  />
-                  <div className="grid grid-cols-2 gap-4 w-full">
-                    <FormField
-                      control={form.control}
-                      name={`areas_execucao.${index}.bairro`}
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Bairro</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Bairro" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`areas_execucao.${index}.cidade`}
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Cidade</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Cidade" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
-
-                  <FormField
-                    control={form.control}
-                    name={`areas_execucao.${index}.observacoes`}
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Observações</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Observações sobre a área de execução..."
-                            className="min-h-[100px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {areaFields.length > 1 && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeArea(index)}
-                    >
-                      Remover área
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  appendArea({
-                    rua: '',
-                    cep: '',
-                    logradouro: '',
-                    numero: '',
-                    complemento: '',
-                    bairro: '',
-                    cidade: '',
-                  })
-                }
-              >
-                Adicionar área
-              </Button>
-            </div>
-          </FormItem>
-        )}
-      />
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    appendArea({
+                      rua: "",
+                      cep: "",
+                      logradouro: "",
+                      numero: "",
+                      complemento: "",
+                      bairro: "",
+                      cidade: "",
+                    })
+                  }
+                >
+                  Adicionar área
+                </Button>
+              </div>
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   );
 
@@ -1240,7 +1270,7 @@ export default function ProjectRegistrationForm() {
               <Textarea
                 placeholder="Descreva as metas..."
                 className="min-h-[120px]"
-                value={typeof field.value === 'string' ? field.value : ''}
+                value={typeof field.value === "string" ? field.value : ""}
                 {...field}
               />
             </FormControl>
@@ -1258,7 +1288,7 @@ export default function ProjectRegistrationForm() {
             <FormControl>
               <CurrencyInput
                 value={field.value}
-                onValueChange={(value) => field.onChange(value ?? '')}
+                onValueChange={(value) => field.onChange(value ?? "")}
                 onBlur={field.onBlur}
                 name={field.name}
                 placeholder="R$ 0,00"
@@ -1269,7 +1299,7 @@ export default function ProjectRegistrationForm() {
         )}
       />
 
-      <FormField
+      {/* <FormField
         control={form.control}
         name="orcamento_gasto"
         render={({ field }) => (
@@ -1278,7 +1308,7 @@ export default function ProjectRegistrationForm() {
             <FormControl>
               <CurrencyInput
                 value={field.value}
-                onValueChange={(value) => field.onChange(value ?? '')}
+                onValueChange={(value) => field.onChange(value ?? "")}
                 onBlur={field.onBlur}
                 name={field.name}
                 placeholder="R$ 0,00"
@@ -1290,7 +1320,7 @@ export default function ProjectRegistrationForm() {
             <FormMessage />
           </FormItem>
         )}
-      />
+      /> */}
 
       <FormField
         control={form.control}
@@ -1391,7 +1421,11 @@ export default function ProjectRegistrationForm() {
                         <FormItem>
                           <FormLabel>Início</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input
+                              type="date"
+                              {...field}
+                              placeholder="dd/mm/aaaa"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1404,7 +1438,11 @@ export default function ProjectRegistrationForm() {
                         <FormItem>
                           <FormLabel>Fim</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input
+                              type="date"
+                              {...field}
+                              placeholder="dd/mm/aaaa"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1429,11 +1467,11 @@ export default function ProjectRegistrationForm() {
                 size="sm"
                 onClick={() =>
                   append({
-                    titulo: '',
-                    descricao: '',
-                    status: '',
-                    inicio: '',
-                    fim: '',
+                    titulo: "",
+                    descricao: "",
+                    status: "",
+                    inicio: "",
+                    fim: "",
                   })
                 }
               >
@@ -1593,7 +1631,7 @@ export default function ProjectRegistrationForm() {
               disabled={isPending}
               size="sm"
               onClick={() =>
-                appendEquipe({ nome: '', funcao: '', cpf_cnpj: '' })
+                appendEquipe({ nome: "", funcao: "", cpf_cnpj: "" })
               }
             >
               Adicionar integrante
@@ -1673,7 +1711,7 @@ export default function ProjectRegistrationForm() {
                 size="sm"
                 onClick={() =>
                   appendAnexo({
-                    descricao: '',
+                    descricao: "",
 
                     arquivo: undefined as unknown as File,
                   })
@@ -1710,7 +1748,7 @@ export default function ProjectRegistrationForm() {
   const renderSteps = () => (
     <>
       {steps.map((StepComponent, index) => (
-        <div key={index} className={currentStep === index + 1 ? '' : 'hidden'}>
+        <div key={index} className={currentStep === index + 1 ? "" : "hidden"}>
           {StepComponent()}
         </div>
       ))}
@@ -1732,11 +1770,11 @@ export default function ProjectRegistrationForm() {
 
         <p className="text-sm text-gray-600 text-center mb-2">
           {(() => {
-            const name = form.getValues('nome');
+            const name = form.getValues("nome");
             if (isCompany) {
               switch (currentStep) {
                 case 1:
-                  return 'Informações iniciais.';
+                  return "Informações iniciais.";
                 case 2:
                   return `Canva digital - ${name}`;
                 case 3:
@@ -1753,7 +1791,7 @@ export default function ProjectRegistrationForm() {
             } else {
               switch (currentStep) {
                 case 1:
-                  return 'Informações iniciais.';
+                  return "Informações iniciais.";
                 case 2:
                   return `Canva digital - ${name}`;
                 case 3:

@@ -8,14 +8,12 @@ import { useNavigate } from 'react-router-dom';
 interface ProjectCardProps {
   id: string;
   title: string;
-  subtitle: string;
   progress?: number;
   imageUrl: string;
 }
 
 export function ProjectCard({
   title,
-  subtitle,
   progress,
   id,
   imageUrl,
@@ -39,7 +37,6 @@ export function ProjectCard({
       <div className="relative h-full flex flex-col justify-between px-4 pb-4 pt-2 text-white">
         <div>
           <h3 className="font-semibold text-lg">{title}</h3>
-          <p className="text-sm opacity-90">{subtitle}</p>
         </div>
 
         <div className="space-y-2">

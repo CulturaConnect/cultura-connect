@@ -135,6 +135,10 @@ export default function EditProjectTab({
   };
 
   const addAnexo = () => {
+    if (anexos.length >= 10) {
+      alert('Máximo de 10 anexos permitidos');
+      return;
+    }
     setAnexos([...anexos, { descricao: '', arquivo: undefined }]);
   };
 
@@ -297,7 +301,7 @@ export default function EditProjectTab({
               Anexos
             </CardTitle>
             <CardDescription>
-              Gerencie os anexos do projeto
+              Gerencie os anexos do projeto (máximo 10 anexos, 10MB cada)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -347,6 +351,12 @@ export default function EditProjectTab({
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
+                          // Validação de tamanho (10MB)
+                          if (file.size > 10 * 1024 * 1024) {
+                            alert('Arquivo deve ter no máximo 10MB');
+                            e.target.value = '';
+                            return;
+                          }
                           updateAnexo(index, 'arquivo', file);
                         }
                       }}
@@ -360,9 +370,10 @@ export default function EditProjectTab({
                 variant="outline"
                 onClick={addAnexo}
                 className="w-full"
+                disabled={anexos.length >= 10}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Adicionar Anexo
+                Adicionar Anexo ({anexos.length}/10)
               </Button>
             </div>
           </CardContent>

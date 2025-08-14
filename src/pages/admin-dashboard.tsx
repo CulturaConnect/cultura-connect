@@ -10,20 +10,21 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getAdminMetrics } from '@/api/dashboard/dashboard.service';
-import { useQuery } from '@tanstack/react-query';
-import { BottomNavigation } from '@/components/layout/bottom-navigation';
-import { Header } from '@/components/layout/header';
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAdminMetrics } from "@/api/dashboard/dashboard.service";
+import { useQuery } from "@tanstack/react-query";
+import { BottomNavigation } from "@/components/layout/bottom-navigation";
+import { Header } from "@/components/layout/header";
+import { formatDateToPTBR } from "@/utils/date";
 
 export default function AdminDashboard() {
   const { data: metrics, isLoading } = useQuery({
-    queryKey: ['admin-metrics'],
+    queryKey: ["admin-metrics"],
     queryFn: getAdminMetrics,
   });
 
-  const pieColors = ['#0ea5e9', '#059669', '#eab308', '#ef4444'];
+  const pieColors = ["#0ea5e9", "#059669", "#eab308", "#ef4444"];
 
   if (isLoading) {
     return (
@@ -180,22 +181,16 @@ export default function AdminDashboard() {
                   dataKey="month"
                   tickFormatter={(value: string) => {
                     const date = new Date(value);
-                    if (isNaN(date.getTime())) return 'Data Inválida';
-                    return new Date(value).toLocaleDateString('pt-BR', {
-                      month: 'short',
-                      year: 'numeric',
-                    });
+                    if (isNaN(date.getTime())) return "Data Inválida";
+                    return formatDateToPTBR(new Date(value));
                   }}
                 />
                 <YAxis allowDecimals={false} />
                 <Tooltip
                   labelFormatter={(label: string) => {
                     const date = new Date(label);
-                    if (isNaN(date.getTime())) return 'Data Inválida';
-                    return date.toLocaleDateString('pt-BR', {
-                      month: 'long',
-                      year: 'numeric',
-                    });
+                    if (isNaN(date.getTime())) return "Data Inválida";
+                    return formatDateToPTBR(date);
                   }}
                 />
                 <Line

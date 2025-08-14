@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import ReactPaginate from 'react-paginate';
 import { cn } from '@/lib/utils';
+import { formatCurrencyToPTBR } from '@/utils/date';
 
 export interface BudgetItem {
   id?: string;
@@ -129,8 +130,37 @@ export default function ProjectBudget() {
     );
   }
 
-  const remainingBudget = totalBudget - spentBudget;
-  const usagePercent = totalBudget > 0 ? (spentBudget / totalBudget) * 100 : 0;
+  // Calcular total dos itens que adicionam ao orçamento (adjustTotal = true) - usando estado local
+  const totalAdicionado = items
+    .filter((item) => item.adjustTotal)
+    .reduce((acc, item) => {
+      const q = item.quantity || 0;
+      const u = item.unitQty || 0;
+      const v = item.unitValue || 0;
+      return acc + Math.max(0, q * u * v);
+    }, 0);
+
+  // Calcular total dos itens que subtraem do orçamento (adjustTotal = false) - usando estado local
+  const totalSubtraido = items
+    .filter((item) => !item.adjustTotal)
+    .reduce((acc, item) => {
+      const q = item.quantity || 0;
+      const u = item.unitQty || 0;
+      const v = item.unitValue || 0;
+      return acc + Math.max(0, q * u * v);
+    }, 0);
+
+  // Orçamento base = orçamento previsto original do projeto
+  const orcamentoBase = data?.orcamento_previsto || 0;
+  
+  // Orçamento total = base + itens que incrementam (adjustTotal=true)
+  const orcamentoTotal = orcamentoBase + totalAdicionado;
+  
+  // Orçamento gasto total = gasto original + itens subtraídos
+  const orcamentoGastoTotal = spentBudget + totalSubtraido;
+  
+  const remainingBudget = orcamentoTotal - orcamentoGastoTotal;
+  const usagePercent = orcamentoTotal > 0 ? (orcamentoGastoTotal / orcamentoTotal) * 100 : 0;
 
   const handleAddItem = () => {
     if (!form.description.trim()) {
@@ -235,28 +265,7 @@ export default function ProjectBudget() {
       ? unitValue * quantity * unitQty
       : 0;
 
-  // Calcular total dos itens que adicionam ao orçamento (adjustTotal = true) - usando estado local
-  const totalAdicionado = items
-    .filter((item) => item.adjustTotal)
-    .reduce((acc, item) => {
-      const q = item.quantity || 0;
-      const u = item.unitQty || 0;
-      const v = item.unitValue || 0;
-      return acc + Math.max(0, q * u * v);
-    }, 0);
 
-  // Calcular total dos itens que subtraem do orçamento (adjustTotal = false) - usando estado local
-  const totalSubtraido = items
-    .filter((item) => !item.adjustTotal)
-    .reduce((acc, item) => {
-      const q = item.quantity || 0;
-      const u = item.unitQty || 0;
-      const v = item.unitValue || 0;
-      return acc + Math.max(0, q * u * v);
-    }, 0);
-
-  // Orçamento base = orçamento atual + tudo que foi subtraído - tudo que foi adicionado
-  const orcamentoBase = totalBudget + totalSubtraido - totalAdicionado;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -307,7 +316,7 @@ export default function ProjectBudget() {
               <CardTitle>Orçamento Total</CardTitle>
             </CardHeader>
             <CardContent className="text-2xl font-bold text-green-600">
-              R$ {totalBudget.toLocaleString('pt-BR')}
+              {formatCurrencyToPTBR(orcamentoTotal)}
             </CardContent>
           </Card>
           <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
@@ -315,7 +324,7 @@ export default function ProjectBudget() {
               <CardTitle>Orçamento Gasto</CardTitle>
             </CardHeader>
             <CardContent className="text-2xl font-bold text-red-600">
-              R$ {spentBudget.toLocaleString('pt-BR')}
+              {formatCurrencyToPTBR(orcamentoGastoTotal)}
             </CardContent>
           </Card>
           <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
@@ -328,7 +337,7 @@ export default function ProjectBudget() {
                   remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}
               >
-                R$ {remainingBudget.toLocaleString('pt-BR')}
+                {formatCurrencyToPTBR(remainingBudget)}
               </p>
               <Progress value={usagePercent} className="h-2" />
             </CardContent>
@@ -344,13 +353,13 @@ export default function ProjectBudget() {
 
           <div className="flex items-center gap-4">
             <Badge >
-              Orçamento Base: R$ {orcamentoBase.toLocaleString('pt-BR')}
+              Orçamento Base: {formatCurrencyToPTBR(orcamentoBase)}
             </Badge>
-            <Badge>Total: R$ {totalBudget.toLocaleString('pt-BR')}</Badge>
-            <Badge>Gasto: R$ {spentBudget.toLocaleString('pt-BR')}</Badge>
+            {/* <Badge>Total: {formatCurrencyToPTBR(totalBudget)}</Badge>
+            <Badge>Gasto: {formatCurrencyToPTBR(spentBudget)}</Badge>
             <Badge variant={remainingBudget >= 0 ? 'secondary' : 'destructive'}>
-              Restante: R$ {remainingBudget.toLocaleString('pt-BR')}
-            </Badge>
+              Restante: {formatCurrencyToPTBR(remainingBudget)}
+            </Badge> */}
           </div>
         </div>
 
@@ -430,13 +439,16 @@ export default function ProjectBudget() {
 
           <div className="flex justify-end flex-col">
             {subtotal > 0 && (
-              <p className="text-right text-md text-slate-700 font-medium">
-                Subtotal:{' '}
-                <span className="text-green-600 font-semibold">
-                  R$ {subtotal.toLocaleString('pt-BR')}
-                </span>
-              </p>
-            )}
+            <p className="text-right text-md text-slate-700 font-medium">
+              Subtotal:{' '}
+              <span className={cn(
+                "font-semibold",
+                form.adjustTotal ? "text-green-600" : "text-red-600"
+              )}>
+                {formatCurrencyToPTBR(subtotal)}
+              </span>
+            </p>
+          )}
 
             <Button
               onClick={handleAddItem}
@@ -462,6 +474,28 @@ export default function ProjectBudget() {
               </tr>
             </thead>
             <tbody>
+              {/* Linha informativa do orçamento gasto durante o cadastro */}
+              {spentBudget > 0 && (
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <td className="p-3 italic text-slate-600">
+                    Orçamento gasto (informado no cadastro)
+                  </td>
+                  <td className="p-3 text-slate-500">-</td>
+                  <td className="p-3 text-slate-500">-</td>
+                  <td className="p-3 text-slate-500">-</td>
+                  <td className="p-3 text-slate-500">-</td>
+                  <td className="p-3 font-semibold text-red-600">
+                    <div className="flex items-center gap-1">
+                      {formatCurrencyToPTBR(spentBudget)}
+                      <ChevronDown size={17} />
+                    </div>
+                  </td>
+                  <td className="p-3 text-center text-slate-400 text-xs">
+                    Informativo
+                  </td>
+                </tr>
+              )}
+              
               {paginatedItems.length > 0 ? (
                 paginatedItems.map((item, idx) => (
                   <tr key={item.id || idx} className="border-b last:border-0">
@@ -470,7 +504,7 @@ export default function ProjectBudget() {
                     <td className="p-3">{item.unitQty}</td>
                     <td className="p-3">{item.unit}</td>
                     <td className="p-3">
-                      R$ {item.unitValue.toLocaleString('pt-BR')}
+                      {formatCurrencyToPTBR(item.unitValue)}
                     </td>
 
                     <td
@@ -480,12 +514,11 @@ export default function ProjectBudget() {
                       )}
                     >
                       <div className="flex items-center gap-1">
-                        R${' '}
-                        {(
+                        {formatCurrencyToPTBR(
                           item.quantity *
                           item.unitQty *
                           item.unitValue
-                        ).toLocaleString('pt-BR')}
+                        )}
                         {item.adjustTotal ? (
                           <ChevronUp size={17} />
                         ) : (
@@ -507,8 +540,8 @@ export default function ProjectBudget() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="text-center text-slate-500 py-4">
-                    Nenhum item adicionado
+                  <td colSpan={7} className="text-center text-slate-500 py-4">
+                    {spentBudget > 0 ? 'Nenhum item adicional adicionado' : 'Nenhum item adicionado'}
                   </td>
                 </tr>
               )}

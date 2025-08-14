@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/auth';
 import { useNotificationsQueries } from '@/api/notifications/notifications.queries';
+import { formatDateTimeToPTBR } from '@/utils/date';
 
 export default function NotificationSheet() {
   const { user } = useAuth();
@@ -49,15 +50,7 @@ export default function NotificationSheet() {
                     <div className="flex items-center gap-2">
                       <p className="text-xs text-gray-400">
                         {notification.created_at
-                          ? new Date(
-                              notification.created_at,
-                            ).toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
+                          ? formatDateTimeToPTBR(notification.created_at)
                           : ''}
                       </p>
                     </div>
