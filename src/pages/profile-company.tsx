@@ -506,7 +506,11 @@ export default function CompanyProfile() {
                       <Avatar className="border border-gray-300">
                         <AvatarImage src={user?.imagem_url} />
                         <AvatarFallback>
-                          {user.nome_completo.charAt(0).toUpperCase()}
+                          {
+                            user.nome_completo
+                              ? user.nome_completo.charAt(0).toUpperCase()
+                              : "U"
+                          }
                         </AvatarFallback>
                       </Avatar>
                       <span>
