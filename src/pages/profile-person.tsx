@@ -64,7 +64,7 @@ export default function PersonProfile() {
     }
 
     const data = new FormData();
-    data.append('nome', nome);
+    data.append('nomeCompleto', nome);
     data.append('telefone', telefone || '');
     data.append('senhaAtual', senhaAtual || '');
     data.append('novaSenha', novaSenha || '');
