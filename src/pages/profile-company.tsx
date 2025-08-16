@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { ChangeEvent, useEffect, useState } from 'react';
-import { ArrowLeft, Edit2, Eye, EyeOff, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { BottomNavigation } from '@/components/layout/bottom-navigation';
-import { useAuth } from '@/contexts/auth';
-import { useUpdateProfile } from '@/api/users/users.queries';
-import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
-import { getUserByCpf } from '@/api/users/users.service';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getCompanyUsers } from '@/api/companies/companies.service';
-import { censurarDocumento } from '@/utils/helpers';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ChangeEvent, useEffect, useState } from "react";
+import { ArrowLeft, Edit2, Eye, EyeOff, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { BottomNavigation } from "@/components/layout/bottom-navigation";
+import { useAuth } from "@/contexts/auth";
+import { useUpdateProfile } from "@/api/users/users.queries";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { getUserByCpf } from "@/api/users/users.service";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getCompanyUsers } from "@/api/companies/companies.service";
+import { censurarDocumento } from "@/utils/helpers";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function CompanyProfile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -22,7 +22,7 @@ export default function CompanyProfile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [cpfInput, setCpfInput] = useState('');
+  const [cpfInput, setCpfInput] = useState("");
 
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<
@@ -32,25 +32,25 @@ export default function CompanyProfile() {
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    empresa: user?.nome || '',
-    cnpj: user?.cnpj || '',
-    telefone: user?.telefone || '',
+    empresa: user?.nome || "",
+    cnpj: user?.cnpj || "",
+    telefone: user?.telefone || "",
     mei: user?.isMei || false,
-    inscricaoEstadual: user?.inscricaoEstadual || '',
-    inscricaoMunicipal: user?.inscricaoMunicipal || '',
+    inscricaoEstadual: user?.inscricaoEstadual || "",
+    inscricaoMunicipal: user?.inscricaoMunicipal || "",
     imagem: null as File | null,
-    email: user?.email || '',
-    senhaAtual: '',
-    novaSenha: '',
-    confirmarSenha: '',
+    email: user?.email || "",
+    senhaAtual: "",
+    novaSenha: "",
+    confirmarSenha: "",
   });
 
   const { mutateAsync, isPending } = useUpdateProfile();
 
   const client = useQueryClient();
   const { data } = useQuery({
-    queryKey: ['company-users', user?.id],
-    queryFn: () => getCompanyUsers(user?.id || ''),
+    queryKey: ["company-users", user?.id],
+    queryFn: () => getCompanyUsers(user?.id || ""),
     enabled: !!user,
   });
 
@@ -75,26 +75,26 @@ export default function CompanyProfile() {
     setSearchLoading(true);
     try {
       if (
-        selectedUsers.some((user) => user.cpf === cpfInput.replace(/\D/g, ''))
+        selectedUsers.some((user) => user.cpf === cpfInput.replace(/\D/g, ""))
       ) {
-        toast.error('Usuário já adicionado.');
+        toast.error("Usuário já adicionado.");
         setSearchLoading(false);
         return;
       }
-      const u = await getUserByCpf(cpfInput.replace(/\D/g, ''));
+      const u = await getUserByCpf(cpfInput.replace(/\D/g, ""));
       if (!u) {
-        toast.error('Usuário não encontrado.');
+        toast.error("Usuário não encontrado.");
         return;
       }
 
       setSelectedUsers((prev) =>
         prev.some((user) => user.cpf === u.cpf)
           ? prev
-          : [...prev, { nome: u.nome, cpf: u.cpf }],
+          : [...prev, { nome: u.nome, cpf: u.cpf }]
       );
-      setCpfInput('');
+      setCpfInput("");
     } catch {
-      toast.error('Usuário não encontrado.');
+      toast.error("Usuário não encontrado.");
     } finally {
       setSearchLoading(false);
     }
@@ -110,33 +110,33 @@ export default function CompanyProfile() {
       formData;
     if (novaSenha && novaSenha !== confirmarSenha) {
       toast.error(
-        'As senhas não coincidem. Por favor, verifique e tente novamente.',
+        "As senhas não coincidem. Por favor, verifique e tente novamente."
       );
       return;
     }
     const data = new FormData();
-    data.append('telefone', telefone || '');
-    data.append('senhaAtual', senhaAtual || '');
-    data.append('novaSenha', novaSenha || '');
+    data.append("telefone", telefone || "");
+    data.append("senhaAtual", senhaAtual || "");
+    data.append("novaSenha", novaSenha || "");
     if (selectedUsers.length) {
       data.append(
-        'usuariosCpfs',
-        JSON.stringify(selectedUsers.map((u) => u.cpf)),
+        "usuariosCpfs",
+        JSON.stringify(selectedUsers.map((u) => u.cpf))
       );
     }
-    if (imagem) data.append('imagem', imagem);
+    if (imagem) data.append("imagem", imagem);
     const res = await mutateAsync(data);
     if (res) {
       client.invalidateQueries({
-        queryKey: ['company-users', user?.id],
+        queryKey: ["company-users", user?.id],
       });
       setFormData((prev) => ({
         ...prev,
-        senhaAtual: '',
-        novaSenha: '',
-        confirmarSenha: '',
+        senhaAtual: "",
+        novaSenha: "",
+        confirmarSenha: "",
       }));
-      setCpfInput('');
+      setCpfInput("");
       setIsEditing(false);
     }
   };
@@ -146,18 +146,18 @@ export default function CompanyProfile() {
   useEffect(() => {
     if (user) {
       setFormData({
-        empresa: user.nome || '',
-        cnpj: user.cnpj || '',
-        telefone: user.telefone || '',
+        empresa: user.nome || "",
+        cnpj: user.cnpj || "",
+        telefone: user.telefone || "",
         mei: user.isMei || false,
-        inscricaoEstadual: user.inscricaoEstadual || '',
-        inscricaoMunicipal: user.inscricaoMunicipal || '',
+        inscricaoEstadual: user.inscricaoEstadual || "",
+        inscricaoMunicipal: user.inscricaoMunicipal || "",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         imagem: user.imagemUrl as string | null as any,
-        email: user.email || '',
-        senhaAtual: '',
-        novaSenha: '',
-        confirmarSenha: '',
+        email: user.email || "",
+        senhaAtual: "",
+        novaSenha: "",
+        confirmarSenha: "",
       });
       setPreviewUrl(user.imagemUrl || null);
     }
@@ -169,7 +169,7 @@ export default function CompanyProfile() {
         data.map((user) => ({
           nome: user.nome_completo,
           cpf: user.cpf,
-        })),
+        }))
       );
     }
   }, [data, selectedUsers.length]);
@@ -215,7 +215,9 @@ export default function CompanyProfile() {
                     className="object-cover w-full h-full"
                   />
                 ) : (
-                  <span>{user?.nome?.charAt(0).toUpperCase() || 'U'}</span>
+                  <span>
+                    {user?.nome ? user.nome.charAt(0).toUpperCase() : "U"}
+                  </span>
                 )}
               </div>
               <label htmlFor="image-upload">
@@ -279,7 +281,7 @@ export default function CompanyProfile() {
               <Input
                 id="telefone"
                 value={formData.telefone}
-                onChange={(e) => handleInputChange('telefone', e.target.value)}
+                onChange={(e) => handleInputChange("telefone", e.target.value)}
                 className="mt-1"
                 placeholder="(99) 99999-9999"
               />
@@ -291,10 +293,10 @@ export default function CompanyProfile() {
               <div className="relative mt-1">
                 <Input
                   id="senhaAtual"
-                  type={showCurrentPassword ? 'text' : 'password'}
+                  type={showCurrentPassword ? "text" : "password"}
                   value={formData.senhaAtual}
                   onChange={(e) =>
-                    handleInputChange('senhaAtual', e.target.value)
+                    handleInputChange("senhaAtual", e.target.value)
                   }
                   placeholder="Digite sua senha atual"
                 />
@@ -320,10 +322,10 @@ export default function CompanyProfile() {
               <div className="relative mt-1">
                 <Input
                   id="novaSenha"
-                  type={showNewPassword ? 'text' : 'password'}
+                  type={showNewPassword ? "text" : "password"}
                   value={formData.novaSenha}
                   onChange={(e) =>
-                    handleInputChange('novaSenha', e.target.value)
+                    handleInputChange("novaSenha", e.target.value)
                   }
                   placeholder="Digite sua nova senha"
                 />
@@ -349,10 +351,10 @@ export default function CompanyProfile() {
               <div className="relative mt-1">
                 <Input
                   id="confirmarSenha"
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? "text" : "password"}
                   value={formData.confirmarSenha}
                   onChange={(e) =>
-                    handleInputChange('confirmarSenha', e.target.value)
+                    handleInputChange("confirmarSenha", e.target.value)
                   }
                   placeholder="Confirme sua nova senha"
                 />
@@ -386,7 +388,7 @@ export default function CompanyProfile() {
                   onClick={handleSearchUser}
                   disabled={searchLoading}
                 >
-                  {searchLoading ? 'Buscando...' : 'Adicionar'}
+                  {searchLoading ? "Buscando..." : "Adicionar"}
                 </Button>
               </div>
 
@@ -440,7 +442,7 @@ export default function CompanyProfile() {
         <div className="flex justify-center py-6">
           <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center text-2xl font-bold text-gray-700">
             <img
-              src={user.imagemUrl || '/images/default-avatar.png'}
+              src={user.imagemUrl || "/images/default-avatar.png"}
               alt="Profile"
               width={80}
               height={80}
@@ -466,7 +468,7 @@ export default function CompanyProfile() {
             <div>
               <p className="text-xs text-gray-500">MEI</p>
               <p className="text-sm font-medium">
-                {formData.mei ? 'Sim' : 'Não'}
+                {formData.mei ? "Sim" : "Não"}
               </p>
             </div>
             <div>
