@@ -8,6 +8,7 @@ export interface CreateProject {
   titulo_oficial?: string;
   imagem?: File;
   areas_execucao?: AreasExecucao[];
+  is_digital?: boolean;
   resumo?: string;
   apresentacao?: string;
   historico?: string;
@@ -96,6 +97,7 @@ export interface Project {
   objetivos_gerais: string;
   metas: string;
   cronograma_atividades: CronogramaAtividade[];
+  is_digital: boolean;
   anexos: Anexo[];
   responsavel_principal_id: string | null;
   equipe: Equipe[];

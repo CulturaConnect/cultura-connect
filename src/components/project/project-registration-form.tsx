@@ -63,28 +63,14 @@ import { CurrencyInput } from "../ui/currency-input";
 import { CanvasDrawer } from "./canvas-drawer";
 
 const modeloSchema = z.object({
-  missao: z
-    .string()
-    .optional(),
-  visao: z
-    .string()
-    .optional(),
+  missao: z.string().optional(),
+  visao: z.string().optional(),
 
-  mercado: z
-    .string()
-    .optional(),
-  publico_alvo: z
-    .string()
-    .optional(),
-  receita: z
-    .string()
-    .optional(),
-  proposta_valor: z
-    .string()
-    .optional(),
-  retencao: z
-    .string()
-    .optional(),
+  mercado: z.string().optional(),
+  publico_alvo: z.string().optional(),
+  receita: z.string().optional(),
+  proposta_valor: z.string().optional(),
+  retencao: z.string().optional(),
 });
 
 const areaExecucaoSchema = z.object({
@@ -257,8 +243,7 @@ export default function ProjectRegistrationForm() {
     }),
     metas: z.string({ required_error: "O campo de metas é obrigatório." }),
 
-    cronograma_atividades: z
-      .array(cronogramaSchema),
+    cronograma_atividades: z.array(cronogramaSchema),
     anexos: z
       .array(
         z.object({
@@ -325,26 +310,34 @@ export default function ProjectRegistrationForm() {
         if (data.is_digital) {
           return true; // Se é digital, não precisa validar campos das áreas
         }
-        
+
         // Para projetos não digitais, validar campos obrigatórios das áreas
         if (!data.areas_execucao || data.areas_execucao.length === 0) {
           return false;
         }
-        
+
         return data.areas_execucao.every((area) => {
           return (
-            area.rua && area.rua.trim().length > 0 &&
-            area.cep && area.cep.trim().length >= 8 &&
-            area.logradouro && area.logradouro.trim().length > 0 &&
-            area.numero && area.numero.trim().length > 0 &&
-            area.bairro && area.bairro.trim().length > 0 &&
-            area.cidade && area.cidade.trim().length > 0 &&
-            area.observacoes && area.observacoes.trim().length > 0
+            area.rua &&
+            area.rua.trim().length > 0 &&
+            area.cep &&
+            area.cep.trim().length >= 8 &&
+            area.logradouro &&
+            area.logradouro.trim().length > 0 &&
+            area.numero &&
+            area.numero.trim().length > 0 &&
+            area.bairro &&
+            area.bairro.trim().length > 0 &&
+            area.cidade &&
+            area.cidade.trim().length > 0 &&
+            area.observacoes &&
+            area.observacoes.trim().length > 0
           );
         });
       },
       {
-        message: "Todos os campos das áreas de execução são obrigatórios para projetos não digitais",
+        message:
+          "Todos os campos das áreas de execução são obrigatórios para projetos não digitais",
         path: ["areas_execucao"],
       }
     );
@@ -543,6 +536,7 @@ export default function ProjectRegistrationForm() {
 
   const onSubmit = async (values: FormData) => {
     try {
+
       const res = await mutateAsync({
         ...values,
         company_id: user?.id,
@@ -586,7 +580,9 @@ export default function ProjectRegistrationForm() {
 
     try {
       await stepSchema[currentStep].parseAsync(values);
-      setCurrentStep((prev) => prev + 1);
+      if (currentStep < totalSteps) {
+        setCurrentStep((prev) => prev + 1);
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         const formattedErrors = err.errors.map((e) => {
@@ -1725,16 +1721,14 @@ export default function ProjectRegistrationForm() {
                       </FormItem>
                     )}
                   />
-                  {anexosFields.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeAnexo(index)}
-                    >
-                      Remover
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => removeAnexo(index)}
+                  >
+                    Remover
+                  </Button>
                 </div>
               ))}
 
@@ -1844,23 +1838,14 @@ export default function ProjectRegistrationForm() {
       {renderStepIndicator()}
 
       <div className="relative flex-1 overflow-y-auto">
-        {/* <div
-          className="
-      absolute top-0 left-0 right-0 h-4 
-      pointer-events-none 
-      bg-gradient-to-b from-white to-transparent z-10
-    "
-        />
-        <div
-          className="
-      absolute bottom-0 left-0 right-0 h-4 
-      pointer-events-none 
-      bg-gradient-to-t from-white to-transparent z-10
-    "
-        /> */}
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && currentStep < totalSteps) {
+                e.preventDefault(); // enter só envia no último step
+              }
+            }}
             className="space-y-6 overflow-y-auto px-2 pb-5"
           >
             {renderSteps()}
@@ -1875,34 +1860,22 @@ export default function ProjectRegistrationForm() {
                 Voltar
               </Button>
 
-              {currentStep === totalSteps ? (
-                <Button
-                  disabled={isPending}
-                  type="submit"
-                  className="bg-blue-500 hover:bg-blue-600"
-                >
-                  {isPending && (
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                  )}
-                  Finalizar
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  disabled={isPending}
-                  className="bg-blue-500 hover:bg-blue-600"
-                >
-                  {isPending && (
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                  )}
-                  <span className="">Avançar</span>
-
-                  {!isPending ? (
-                    <ChevronRight className="h-4 w-4" />
-                  ) : null}
-                </Button>
-              )}
+              <Button
+                type="button"
+                disabled={isPending}
+                className="bg-blue-500 hover:bg-blue-600"
+                onClick={
+                  currentStep === totalSteps
+                    ? form.handleSubmit(onSubmit) // dispara submit de forma controlada
+                    : nextStep // avança de step
+                }
+              >
+                {isPending && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
+                {currentStep === totalSteps ? "Finalizar" : "Avançar"}
+                {currentStep !== totalSteps && !isPending ? (
+                  <ChevronRight className="h-4 w-4" />
+                ) : null}
+              </Button>
             </div>
           </form>
         </Form>

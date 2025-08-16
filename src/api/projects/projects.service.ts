@@ -52,6 +52,8 @@ export async function createProject(data: CreateProject) {
       : '',
   );
   formData.append('is_public', String(data.is_public ?? true));
+  formData.append('is_digital', String(data.is_digital ?? true));
+
   if (data.responsavel_principal_id) {
     formData.append('responsavel_principal_id', data.responsavel_principal_id);
   }

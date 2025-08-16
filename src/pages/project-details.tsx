@@ -19,6 +19,8 @@ import {
   TrendingUp,
   Gift,
   DollarSign,
+  Monitor,
+  Wifi,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGetProjectByIdQuery } from "@/api/projects/projects.queries";
@@ -230,58 +232,84 @@ export default function ProjectDetails() {
                 </CardContent>
               </Card>
 
-              {/* Localização */}
-              <Card className="shadow-lg border-0">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <MapPin className="w-5 h-5 text-green-600" />
-                    Área de Execução
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {data?.areas_execucao.map((area, index) => (
-                    <div key={index} className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-900">
-                            Endereço:
-                          </span>
-                          <p className="text-gray-600 mt-1">
-                            {area.rua}, {area.numero}
-                            {area.complemento && ` - ${area.complemento}`}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-900">
-                            Bairro:
-                          </span>
-                          <p className="text-gray-600 mt-1">{area.bairro}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-900">
-                            Cidade:
-                          </span>
-                          <p className="text-gray-600 mt-1">{area.cidade}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-900">
-                            CEP:
-                          </span>
-                          <p className="text-gray-600 mt-1">{area.cep}</p>
-                        </div>
+              {/* Localização ou Projeto Digital */}
+              {data?.is_digital ? (
+                <Card className="shadow-lg border-0">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Monitor className="w-5 h-5 text-blue-600" />
+                      Projeto Digital
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Wifi className="w-8 h-8 text-blue-600" />
                       </div>
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          Observações:
-                        </span>
-                        <p className="text-gray-600 mt-1">
-                          {area?.observacoes}
+                      <div className="text-center space-y-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Este é um projeto digital
+                        </h3>
+                        <p className="text-gray-600 text-sm max-w-md">
+                          Este projeto será executado de forma digital, não necessitando de um local físico específico para sua realização.
                         </p>
                       </div>
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="shadow-lg border-0">
+                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <MapPin className="w-5 h-5 text-green-600" />
+                      Área de Execução
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {data?.areas_execucao.map((area, index) => (
+                      <div key={index} className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-900">
+                              Endereço:
+                            </span>
+                            <p className="text-gray-600 mt-1">
+                              {area.rua}, {area.numero}
+                              {area.complemento && ` - ${area.complemento}`}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-900">
+                              Bairro:
+                            </span>
+                            <p className="text-gray-600 mt-1">{area.bairro}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-900">
+                              Cidade:
+                            </span>
+                            <p className="text-gray-600 mt-1">{area.cidade}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-900">
+                              CEP:
+                            </span>
+                            <p className="text-gray-600 mt-1">{area.cep}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            Observações:
+                          </span>
+                          <p className="text-gray-600 mt-1">
+                            {area?.observacoes}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {data?.modelo &&

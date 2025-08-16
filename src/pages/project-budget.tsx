@@ -474,28 +474,6 @@ export default function ProjectBudget() {
               </tr>
             </thead>
             <tbody>
-              {/* Linha informativa do orçamento gasto durante o cadastro */}
-              {spentBudget > 0 && (
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <td className="p-3 italic text-slate-600">
-                    Orçamento gasto (informado no cadastro)
-                  </td>
-                  <td className="p-3 text-slate-500">-</td>
-                  <td className="p-3 text-slate-500">-</td>
-                  <td className="p-3 text-slate-500">-</td>
-                  <td className="p-3 text-slate-500">-</td>
-                  <td className="p-3 font-semibold text-red-600">
-                    <div className="flex items-center gap-1">
-                      {formatCurrencyToPTBR(spentBudget)}
-                      <ChevronDown size={17} />
-                    </div>
-                  </td>
-                  <td className="p-3 text-center text-slate-400 text-xs">
-                    Informativo
-                  </td>
-                </tr>
-              )}
-              
               {paginatedItems.length > 0 ? (
                 paginatedItems.map((item, idx) => (
                   <tr key={item.id || idx} className="border-b last:border-0">
