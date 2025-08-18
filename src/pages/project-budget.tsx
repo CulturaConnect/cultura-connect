@@ -46,11 +46,9 @@ export default function ProjectBudget() {
   const { mutateAsync, isPending } = useUpdateBudgetItemMutation();
 
   const [items, setItems] = useState<BudgetItem[]>([]);
-  const [totalBudget, setTotalBudget] = useState(0);
   const [spentBudget, setSpentBudget] = useState(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [originalItems, setOriginalItems] = useState<BudgetItem[]>([]);
-  const [originalTotalBudget, setOriginalTotalBudget] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 5;
@@ -83,9 +81,6 @@ export default function ProjectBudget() {
 
   useEffect(() => {
     if (data) {
-      const budget = data.orcamento_previsto || 0;
-      setTotalBudget(budget);
-      setOriginalTotalBudget(budget);
       setSpentBudget(data.orcamento_gasto || 0);
       // Could load items from API if available
     }
@@ -94,9 +89,8 @@ export default function ProjectBudget() {
   // Detectar mudanças não salvas
   useEffect(() => {
     const itemsChanged = JSON.stringify(items) !== JSON.stringify(originalItems);
-    const budgetChanged = totalBudget !== originalTotalBudget;
-    setHasUnsavedChanges(itemsChanged || budgetChanged);
-  }, [items, originalItems, totalBudget, originalTotalBudget]);
+    setHasUnsavedChanges(itemsChanged);
+  }, [items, originalItems]);
 
   // Função para lidar com tentativa de navegação
   const handleBackNavigation = useCallback(() => {
@@ -114,10 +108,9 @@ export default function ProjectBudget() {
   // Função para cancelar alterações
   const handleCancelChanges = useCallback(() => {
     setItems(JSON.parse(JSON.stringify(originalItems)));
-    setTotalBudget(originalTotalBudget);
     setHasUnsavedChanges(false);
     toast.success('Alterações canceladas');
-  }, [originalItems, originalTotalBudget]);
+  }, [originalItems]);
 
   if (isLoading || isLoadingBudgetItems) {
     return (
@@ -156,8 +149,18 @@ export default function ProjectBudget() {
   // Orçamento total = base + itens que incrementam (adjustTotal=true)
   const orcamentoTotal = orcamentoBase + totalAdicionado;
   
-  // Orçamento gasto total = gasto original + itens subtraídos
-  const orcamentoGastoTotal = spentBudget + totalSubtraido;
+  // Calcular itens não salvos que subtraem do orçamento (para UX imediato)
+  const itensNaoSalvosSubtraidos = items
+    .filter((item) => !item.adjustTotal && !item.id) // apenas itens locais não salvos
+    .reduce((acc, item) => {
+      const q = item.quantity || 0;
+      const u = item.unitQty || 0;
+      const v = item.unitValue || 0;
+      return acc + Math.max(0, q * u * v);
+    }, 0);
+  
+  // Orçamento gasto total = gasto da API + itens locais não salvos que subtraem
+  const orcamentoGastoTotal = spentBudget + itensNaoSalvosSubtraidos;
   
   const remainingBudget = orcamentoTotal - orcamentoGastoTotal;
   const usagePercent = orcamentoTotal > 0 ? (orcamentoGastoTotal / orcamentoTotal) * 100 : 0;
@@ -204,12 +207,6 @@ export default function ProjectBudget() {
 
     setItems([...items, newItem]);
 
-    if (form.adjustTotal) {
-      setTotalBudget((prev) => prev + total);
-    } else {
-      setTotalBudget((prev) => prev - total);
-    }
-
     setForm({
       description: '',
       quantity: 1,
@@ -223,12 +220,6 @@ export default function ProjectBudget() {
   const removeItem = (index: number) => {
     const item = items[index];
     if (item) {
-      const total = item.quantity * item.unitQty * item.unitValue;
-      if (item.adjustTotal) {
-        setTotalBudget((prev) => prev - total);
-      } else {
-        setTotalBudget((prev) => prev + total);
-      }
       setItems(items.filter((_, idx) => idx !== index));
     }
   };
@@ -249,7 +240,6 @@ export default function ProjectBudget() {
 
       // Atualizar o estado original após salvar com sucesso
       setOriginalItems(JSON.parse(JSON.stringify(items)));
-      setOriginalTotalBudget(totalBudget);
       setHasUnsavedChanges(false);
       toast.success('Alterações salvas com sucesso!');
     } catch (error) {
