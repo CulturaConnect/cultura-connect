@@ -412,6 +412,8 @@ export default function ProjectRegistrationForm() {
 
   const imageFile = form.watch("imagem");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showOutro, setShowOutro] = useState(false);
+
 
   const { control } = form;
 
@@ -487,50 +489,50 @@ export default function ProjectRegistrationForm() {
 
   const stepSchema: Record<number, ZodSchema> = isCompany
     ? {
-        1: step1Schema,
-        2: rawSchema.pick({ modelo: true }),
-        3: rawSchema.pick({ responsavel_legal_id: true }),
-        4: rawSchema.pick({
-          areas_execucao: true,
-          resumo: true,
-          apresentacao: true,
-          historico: true,
-        }),
-        5: rawSchema.pick({
-          descricao_proposta: true,
-          descricao_contrapartida: true,
-          justificativa: true,
-          objetivos_gerais: true,
-          metas: true,
-          cronograma_atividades: true,
-          orcamento_previsto: true,
-          orcamento_gasto: true,
-        }),
-        6: rawSchema.pick({ responsavel_principal_id: true, equipe: true }),
-        7: rawSchema.pick({ anexos: true }),
-      }
+      1: step1Schema,
+      2: rawSchema.pick({ modelo: true }),
+      3: rawSchema.pick({ responsavel_legal_id: true }),
+      4: rawSchema.pick({
+        areas_execucao: true,
+        resumo: true,
+        apresentacao: true,
+        historico: true,
+      }),
+      5: rawSchema.pick({
+        descricao_proposta: true,
+        descricao_contrapartida: true,
+        justificativa: true,
+        objetivos_gerais: true,
+        metas: true,
+        cronograma_atividades: true,
+        orcamento_previsto: true,
+        orcamento_gasto: true,
+      }),
+      6: rawSchema.pick({ responsavel_principal_id: true, equipe: true }),
+      7: rawSchema.pick({ anexos: true }),
+    }
     : {
-        1: step1Schema,
-        2: rawSchema.pick({ modelo: true }),
-        3: rawSchema.pick({
-          areas_execucao: true,
-          resumo: true,
-          apresentacao: true,
-          historico: true,
-        }),
-        4: rawSchema.pick({
-          descricao_proposta: true,
-          descricao_contrapartida: true,
-          justificativa: true,
-          objetivos_gerais: true,
-          metas: true,
-          cronograma_atividades: true,
-          orcamento_previsto: true,
-          orcamento_gasto: true,
-        }),
-        5: rawSchema.pick({ equipe: true }),
-        6: rawSchema.pick({ anexos: true }),
-      };
+      1: step1Schema,
+      2: rawSchema.pick({ modelo: true }),
+      3: rawSchema.pick({
+        areas_execucao: true,
+        resumo: true,
+        apresentacao: true,
+        historico: true,
+      }),
+      4: rawSchema.pick({
+        descricao_proposta: true,
+        descricao_contrapartida: true,
+        justificativa: true,
+        objetivos_gerais: true,
+        metas: true,
+        cronograma_atividades: true,
+        orcamento_previsto: true,
+        orcamento_gasto: true,
+      }),
+      5: rawSchema.pick({ equipe: true }),
+      6: rawSchema.pick({ anexos: true }),
+    };
 
   const { mutateAsync, isPending } = useCreateProjectMutation();
 
@@ -618,21 +620,19 @@ export default function ProjectRegistrationForm() {
         (step, index) => (
           <div key={step} className="flex items-center">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
-                step === currentStep
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${step === currentStep
                   ? "bg-blue-500 text-white scale-110 shadow-md"
                   : step < currentStep
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-200 text-gray-600"
+                }`}
             >
               {step}
             </div>
             {index < totalSteps - 1 && (
               <div
-                className={`hidden sm:block w-12 h-0.5 transition-colors duration-200 ${
-                  step < currentStep ? "bg-green-500" : "bg-gray-200"
-                }`}
+                className={`hidden sm:block w-12 h-0.5 transition-colors duration-200 ${step < currentStep ? "bg-green-500" : "bg-gray-200"
+                  }`}
               />
             )}
           </div>
@@ -657,33 +657,52 @@ export default function ProjectRegistrationForm() {
         )}
       />
 
+
       <FormField
         control={form.control}
         name="segmento"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Segmento *</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o segmento" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="teatro">Teatro</SelectItem>
-                <SelectItem value="danca">Dança</SelectItem>
-                <SelectItem value="musica">Música</SelectItem>
-                <SelectItem value="poema">Poema</SelectItem>
-                <SelectItem value="cinema">Cinema</SelectItem>
-                <SelectItem value="seminarios">Seminários</SelectItem>
-                <SelectItem value="games">Games</SelectItem>
-                <SelectItem value="pintura">Pintura</SelectItem>
-                <SelectItem value="folclore">Folclore</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormLabel>Segmento *</FormLabel>
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value === "outro" ? "" : value);
+                  setShowOutro(value === "outro");
+                }}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o segmento" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="teatro">Teatro</SelectItem>
+                  <SelectItem value="danca">Dança</SelectItem>
+                  <SelectItem value="musica">Música</SelectItem>
+                  <SelectItem value="poema">Poema</SelectItem>
+                  <SelectItem value="cinema">Cinema</SelectItem>
+                  <SelectItem value="seminarios">Seminários</SelectItem>
+                  <SelectItem value="games">Games</SelectItem>
+                  <SelectItem value="pintura">Pintura</SelectItem>
+                  <SelectItem value="folclore">Folclore</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+              {showOutro && (
+                <div className="mt-2">
+                  <Input
+                    placeholder="Digite o segmento"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                  />
+                </div>
+              )}
+              <FormMessage />
+            </FormItem>
+          );
+        }}
       />
 
       <FormField
@@ -1755,22 +1774,22 @@ export default function ProjectRegistrationForm() {
 
   const steps = isCompany
     ? [
-        renderStep1,
-        renderStep2,
-        renderStep3,
-        renderStep4,
-        renderStep5,
-        renderStep6,
-        renderStep7,
-      ]
+      renderStep1,
+      renderStep2,
+      renderStep3,
+      renderStep4,
+      renderStep5,
+      renderStep6,
+      renderStep7,
+    ]
     : [
-        renderStep1,
-        renderStep2,
-        renderStep4,
-        renderStep5,
-        renderStep6,
-        renderStep7,
-      ];
+      renderStep1,
+      renderStep2,
+      renderStep4,
+      renderStep5,
+      renderStep6,
+      renderStep7,
+    ];
 
   const renderSteps = () => (
     <>
