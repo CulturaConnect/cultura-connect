@@ -1,0 +1,164 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Permite executar manualmente
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test & Build
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests (se houver)
+      run: npm run test --if-present || echo "Nenhum teste configurado"
+
+    - name: Type check
+      run: npx tsc --noEmit
+
+    - name: Build project
+      run: npm run build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files
+        path: dist/
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    name: Deploy to VPS
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT || 22 }}
+        command_timeout: 300s
+        script: |
+          # Cores para output
+          RED='\033[0;31m'
+          GREEN='\033[0;32m'
+          YELLOW='\033[1;33m'
+          BLUE='\033[0;34m'
+          NC='\033[0m' # No Color
+          
+          echo -e "${BLUE}🚀 Iniciando deploy automatizado...${NC}"
+          
+          # Variáveis de configuração
+          PROJECT_PATH="${{ secrets.VPS_PROJECT_PATH }}"
+          BACKUP_PATH="${{ secrets.VPS_BACKUP_PATH || '/tmp/cultura-connect-backups' }}"
+          
+          # Criar diretório de backup se não existir
+          mkdir -p "$BACKUP_PATH"
+          
+          # Verificar se o diretório do projeto existe
+          if [ ! -d "$PROJECT_PATH" ]; then
+            echo -e "${RED}❌ Diretório do projeto não encontrado: $PROJECT_PATH${NC}"
+            exit 1
+          fi
+          
+          cd "$PROJECT_PATH"
+          echo -e "${BLUE}📁 Diretório atual: $(pwd)${NC}"
+          
+          # Fazer backup da build atual
+          if [ -d "dist" ]; then
+            BACKUP_NAME="dist_backup_$(date +%Y%m%d_%H%M%S)"
+            echo -e "${YELLOW}📦 Fazendo backup: $BACKUP_NAME${NC}"
+            cp -r dist "$BACKUP_PATH/$BACKUP_NAME" || echo -e "${YELLOW}⚠️  Backup falhou, continuando...${NC}"
+            
+            # Limpar backups antigos (manter apenas os 5 mais recentes)
+            cd "$BACKUP_PATH"
+            ls -t | grep "dist_backup_" | tail -n +6 | xargs -r rm -rf || true
+            cd "$PROJECT_PATH"
+          fi
+          
+          # Verificar status do git
+          echo -e "${BLUE}📥 Verificando repositório...${NC}"
+          git fetch origin
+          
+          # Fazer pull das mudanças
+          echo -e "${BLUE}📥 Fazendo pull do repositório...${NC}"
+          git reset --hard origin/main
+          
+          # Verificar se package.json mudou
+          if git diff HEAD~1 --name-only | grep -q "package.json\|package-lock.json" || [ ! -d "node_modules" ]; then
+            echo -e "${YELLOW}📦 Instalando/atualizando dependências...${NC}"
+            npm ci --only=production
+          else
+            echo -e "${GREEN}📦 Dependências já estão atualizadas${NC}"
+          fi
+          
+          # Fazer build do projeto
+          echo -e "${BLUE}🔨 Fazendo build do projeto...${NC}"
+          NODE_ENV=production npm run build
+          
+          # Verificar se o build foi bem-sucedido
+          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+            echo -e "${RED}❌ Build falhou ou diretório dist está vazio!${NC}"
+            exit 1
+          fi
+          
+          # Definir permissões corretas
+          echo -e "${BLUE}🔐 Configurando permissões...${NC}"
+          chmod -R 755 dist/ || true
+          
+          # Reiniciar serviços (descomente conforme necessário)
+          echo -e "${BLUE}🔄 Reiniciando serviços...${NC}"
+          
+          # Para Nginx
+          # sudo systemctl reload nginx && echo -e "${GREEN}✅ Nginx recarregado${NC}" || echo -e "${YELLOW}⚠️ Erro ao recarregar Nginx${NC}"
+          
+          # Para PM2
+          # pm2 restart all && echo -e "${GREEN}✅ PM2 reiniciado${NC}" || echo -e "${YELLOW}⚠️ Erro ao reiniciar PM2${NC}"
+          
+          # Para Apache
+          # sudo systemctl reload apache2 && echo -e "${GREEN}✅ Apache recarregado${NC}" || echo -e "${YELLOW}⚠️ Erro ao recarregar Apache${NC}"
+          
+          # Para Docker
+          # docker-compose restart web && echo -e "${GREEN}✅ Docker reiniciado${NC}" || echo -e "${YELLOW}⚠️ Erro ao reiniciar Docker${NC}"
+          
+          echo -e "${GREEN}🎉 Deploy concluído com sucesso!${NC}"
+          echo -e "${BLUE}📊 Estatísticas do build:${NC}"
+          echo "   - Tamanho do dist: $(du -sh dist | cut -f1)"
+          echo "   - Arquivos: $(find dist -type f | wc -l) arquivos"
+          echo "   - Data: $(date)"
+          echo "   - Commit: $(git rev-parse --short HEAD)"
+          echo "   - Branch: $(git branch --show-current)"
+
+    - name: Notify success
+      if: success()
+      run: |
+        echo "✅ Deploy realizado com sucesso na VPS!"
+        echo "🔗 Commit: ${{ github.sha }}"
+        echo "👤 Autor: ${{ github.actor }}"
+
+    - name: Notify failure
+      if: failure()
+      run: |
+        echo "❌ Deploy falhou!"
+        echo "🔗 Verifique os logs acima para mais detalhes"

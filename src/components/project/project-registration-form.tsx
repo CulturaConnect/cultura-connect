@@ -7,7 +7,6 @@ import { z, ZodSchema } from "zod";
 import {
   ChevronLeft,
   ChevronRight,
-  Upload,
   Target,
   Eye,
   Users,
@@ -20,20 +19,6 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 import {
   Form,
   FormControl,
@@ -53,7 +38,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 import { useGetCompanyUsers } from "@/api/companies/companies.queries";
 import { useAuth } from "@/contexts/auth";
 import { useCreateProjectMutation } from "@/api/projects/projects.queries";
@@ -621,10 +605,10 @@ export default function ProjectRegistrationForm() {
           <div key={step} className="flex items-center">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${step === currentStep
-                  ? "bg-blue-500 text-white scale-110 shadow-md"
-                  : step < currentStep
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-200 text-gray-600"
+                ? "bg-blue-500 text-white scale-110 shadow-md"
+                : step < currentStep
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-200 text-gray-600"
                 }`}
             >
               {step}
@@ -982,6 +966,9 @@ export default function ProjectRegistrationForm() {
             <FormLabel>Resumo do projeto</FormLabel>
             <FormControl>
               <Textarea
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
                 placeholder="Descreva o resumo do projeto..."
                 className="min-h-[100px]"
                 {...field}
@@ -1000,6 +987,9 @@ export default function ProjectRegistrationForm() {
             <FormLabel>Apresentação</FormLabel>
             <FormControl>
               <Textarea
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
                 placeholder="Descreva a apresentação..."
                 className="min-h-[100px]"
                 {...field}
@@ -1018,6 +1008,9 @@ export default function ProjectRegistrationForm() {
             <FormLabel>Histórico</FormLabel>
             <FormControl>
               <Textarea
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
                 placeholder="Descreva o histórico..."
                 className="min-h-[100px]"
                 {...field}
@@ -1188,6 +1181,9 @@ export default function ProjectRegistrationForm() {
                             <Textarea
                               placeholder="Observações sobre a área de execução..."
                               className="min-h-[100px]"
+                              onKeyDown={(e) => {
+                                e.stopPropagation();
+                              }}
                               {...field}
                             />
                           </FormControl>
@@ -1245,6 +1241,9 @@ export default function ProjectRegistrationForm() {
               <Textarea
                 placeholder="Descreva a proposta..."
                 className="min-h-[120px]"
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
                 {...field}
               />
             </FormControl>
@@ -1262,6 +1261,9 @@ export default function ProjectRegistrationForm() {
             <FormControl>
               <Textarea
                 placeholder="Descreva a contrapartida..."
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
                 className="min-h-[120px]"
                 {...field}
               />
@@ -1280,6 +1282,9 @@ export default function ProjectRegistrationForm() {
             <FormControl>
               <Textarea
                 placeholder="Justificativa do projeto..."
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
                 className="min-h-[120px]"
                 {...field}
               />
@@ -1298,6 +1303,9 @@ export default function ProjectRegistrationForm() {
             <FormControl>
               <Textarea
                 placeholder="Descreva os objetivos gerais e específicos..."
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
                 className="min-h-[120px]"
                 {...field}
               />
@@ -1318,6 +1326,9 @@ export default function ProjectRegistrationForm() {
               <Textarea
                 placeholder="Descreva as metas..."
                 className="min-h-[120px]"
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
                 value={typeof field.value === "string" ? field.value : ""}
                 {...field}
               />
@@ -1418,6 +1429,9 @@ export default function ProjectRegistrationForm() {
                           <Textarea
                             id={`cronograma_atividades.${index}.descricao`}
                             {...field}
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                            }}
                             placeholder="Descrição da atividade"
                             className="min-h-[80px]"
                           />
@@ -1628,11 +1642,15 @@ export default function ProjectRegistrationForm() {
                           Função
                         </FormLabel>
                         <FormControl>
-                          <Input
+                          <Textarea
                             disabled={isPending}
                             id={`equipe.${index}.funcao`}
                             {...field}
-                            placeholder="Função do integrante"
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                            }}
+                            placeholder="Função do integrante (ex: Diretor, Ator principal, Musicista...)"
+                            className="min-h-[80px]"
                           />
                         </FormControl>
                       </FormItem>
@@ -1715,6 +1733,9 @@ export default function ProjectRegistrationForm() {
                           <Textarea
                             placeholder="Descreva o anexo..."
                             className="min-h-[80px]"
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                            }}
                             {...field}
                           />
                         </FormControl>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import {
   Calendar,
   MapPin,
@@ -21,12 +22,14 @@ import {
   DollarSign,
   Monitor,
   Wifi,
+  Settings,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGetProjectByIdQuery } from "@/api/projects/projects.queries";
 import { useAuth } from "@/contexts/auth";
 import { censurarDocumento } from "@/utils/helpers";
 import EditProjectTab from "@/components/project/edit-project";
+import EditableProjectDetails from "@/components/project/editable-project-details";
 import { useState } from "react";
 import { formatDateToPTBR } from "@/utils/date";
 
@@ -47,6 +50,8 @@ export default function ProjectDetails() {
 
   const { data, isLoading } = useGetProjectByIdQuery(projectId);
   const [tabs, setTabs] = useState<string>("details");
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [viewMode, setViewMode] = useState<"normal" | "admin">("normal");
   const isOwner = user?.id === data?.company_id;
 
   if (isLoading) {
@@ -65,7 +70,28 @@ export default function ProjectDetails() {
           onClick={() => navigate("/")}
         />
         <h1 className="text-lg font-medium">Detalhes do Projeto</h1>
-        <div className="w-5" />
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <Button
+              onClick={() => setViewMode(viewMode === "normal" ? "admin" : "normal")}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              {viewMode === "normal" ? (
+                <>
+                  <Settings className="w-4 h-4" />
+                  Modo Admin
+                </>
+              ) : (
+                <>
+                  <Eye className="w-4 h-4" />
+                  Modo Normal
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="container mx-auto p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
@@ -81,23 +107,31 @@ export default function ProjectDetails() {
           </TabsList>
 
           <TabsContent value="details" className="space-y-8">
-            {/* Header */}
-            <Card className="overflow-hidden border-0 shadow-xl bg-white">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-pink-600/10" />
-                <CardContent className="relative p-8">
-                  <div className="flex flex-col lg:flex-row gap-8 items-start">
-                    <div className="relative">
-                      <div className="w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
-                        <img
-                          src={data?.imagem_url || "/placeholder.svg"}
-                          alt={data?.nome}
-                          width={128}
-                          height={128}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
+            {viewMode === "admin" && isOwner ? (
+              <EditableProjectDetails
+                project={data}
+                isEditing={isEditingDetails}
+                onToggleEdit={() => setIsEditingDetails(!isEditingDetails)}
+              />
+            ) : (
+              <div className="space-y-8">
+                {/* Header */}
+                <Card className="overflow-hidden border-0 shadow-xl bg-white">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-pink-600/10" />
+                    <CardContent className="relative p-8">
+                      <div className="flex flex-col lg:flex-row gap-8 items-start">
+                        <div className="relative">
+                          <div className="w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+                            <img
+                              src={data?.imagem_url || "/placeholder.svg"}
+                              alt={data?.nome}
+                              width={128}
+                              height={128}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
 
                     <div className="flex-1 space-y-4">
                       <div className="space-y-2">
@@ -114,7 +148,7 @@ export default function ProjectDetails() {
                               data?.segmento.slice(1)}
                           </Badge>
                         </div>
-                        <p className="text-lg text-gray-600">{data?.resumo}</p>
+                        <p className="text-lg text-gray-600 whitespace-pre-wrap">{data?.resumo}</p>
                       </div>
 
                       <div className="flex items-center gap-6 text-sm text-gray-500">
@@ -150,7 +184,7 @@ export default function ProjectDetails() {
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Objetivos Gerais e específicos
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                       {data?.objetivos_gerais}
                     </p>
                   </div>
@@ -159,7 +193,7 @@ export default function ProjectDetails() {
 
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Metas</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                       {data?.metas}
                     </p>
                   </div>
@@ -170,7 +204,7 @@ export default function ProjectDetails() {
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Retenção
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                       {data?.modelo.retencao}
                     </p>
                   </div>
@@ -181,7 +215,7 @@ export default function ProjectDetails() {
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Apresentação
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                       {data?.apresentacao}
                     </p>
                   </div>
@@ -192,7 +226,7 @@ export default function ProjectDetails() {
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Histórico
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                       {data?.historico}
                     </p>
                   </div>
@@ -203,7 +237,7 @@ export default function ProjectDetails() {
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Descrição da Proposta
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                       {data?.descricao_proposta}
                     </p>
                   </div>
@@ -214,7 +248,7 @@ export default function ProjectDetails() {
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Descrição da Contrapartida
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                       {data?.descricao_contrapartida}
                     </p>
                   </div>
@@ -225,7 +259,7 @@ export default function ProjectDetails() {
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Justificativa
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                       {data?.justificativa}
                     </p>
                   </div>
@@ -301,7 +335,7 @@ export default function ProjectDetails() {
                           <span className="font-medium text-gray-900">
                             Observações:
                           </span>
-                          <p className="text-gray-600 mt-1">
+                          <p className="text-gray-600 mt-1 whitespace-pre-wrap">
                             {area?.observacoes}
                           </p>
                         </div>
@@ -336,7 +370,7 @@ export default function ProjectDetails() {
                               Visão
                             </h3>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                             {data?.modelo.visao}
                           </p>
                         </div>
@@ -350,7 +384,7 @@ export default function ProjectDetails() {
                               Missão
                             </h3>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                             {data?.modelo.missao}
                           </p>
                         </div>
@@ -364,7 +398,7 @@ export default function ProjectDetails() {
                               Mercado
                             </h3>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                             {data?.modelo.mercado}
                           </p>
                         </div>
@@ -378,7 +412,7 @@ export default function ProjectDetails() {
                               Público Alvo
                             </h3>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                             {data?.modelo.publico_alvo}
                           </p>
                         </div>
@@ -392,7 +426,7 @@ export default function ProjectDetails() {
                               Proposta de Valor
                             </h3>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                             {data?.modelo.proposta_valor}
                           </p>
                         </div>
@@ -406,7 +440,7 @@ export default function ProjectDetails() {
                               Receita
                             </h3>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                             {data?.modelo.receita}
                           </p>
                         </div>
@@ -437,7 +471,7 @@ export default function ProjectDetails() {
                           <h4 className="font-medium text-gray-900">
                             {atividade.titulo}
                           </h4>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">
                             {atividade.descricao}
                           </p>
                         </div>
@@ -472,7 +506,7 @@ export default function ProjectDetails() {
                           <h4 className="font-medium text-gray-900">
                             {membro.nome}
                           </h4>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">
                             {membro.funcao}
                           </p>
                           <p className="text-xs text-gray-500">
@@ -516,6 +550,8 @@ export default function ProjectDetails() {
                   ))}
                 </CardContent>
               </Card>
+            )}
+              </div>
             )}
           </TabsContent>
 

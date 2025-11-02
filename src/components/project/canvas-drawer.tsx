@@ -141,28 +141,32 @@ function CanvasForm({
         onChange={(e) =>
           setValue(
             `modelo.${model.id}` as
-              | `modelo.missao`
-              | `modelo.visao`
-              | `modelo.mercado`
-              | `modelo.publico_alvo`
-              | `modelo.receita`
-              | `modelo.proposta_valor`
-              | `modelo.retencao`,
+            | `modelo.missao`
+            | `modelo.visao`
+            | `modelo.mercado`
+            | `modelo.publico_alvo`
+            | `modelo.receita`
+            | `modelo.proposta_valor`
+            | `modelo.retencao`,
             e.target.value,
           )
         }
-        placeholder="Descreva aqui..."
-        className="flex-1"
+        onKeyDown={(e) => {
+          e.stopPropagation();
+        }}
+        placeholder="Descreva aqui... (pressione Enter para quebrar linha)"
+        className="flex-1 min-h-[120px] resize-none"
         value={watch(
           `modelo.${model.id}` as
-            | 'modelo.missao'
-            | 'modelo.visao'
-            | 'modelo.mercado'
-            | 'modelo.publico_alvo'
-            | 'modelo.receita'
-            | 'modelo.proposta_valor'
-            | 'modelo.retencao',
+          | 'modelo.missao'
+          | 'modelo.visao'
+          | 'modelo.mercado'
+          | 'modelo.publico_alvo'
+          | 'modelo.receita'
+          | 'modelo.proposta_valor'
+          | 'modelo.retencao',
         )}
+        style={{ whiteSpace: 'pre-wrap' }}
       />
     </div>
   );

@@ -28,7 +28,23 @@ export interface CreateProject {
 }
 
 export interface UpdateProject {
+  nome?: string;
+  segmento?: string;
+  inicio?: string;
+  fim?: string;
+  modelo?: Modelo;
+  resumo?: string;
+  apresentacao?: string;
+  historico?: string;
+  descricao_proposta?: string;
+  descricao_contrapartida?: string;
+  justificativa?: string;
+  objetivos_gerais?: string;
+  metas?: string;
+  areas_execucao?: AreasExecucao[];
+  is_digital?: boolean;
   cronograma_atividades?: CronogramaAtividade[];
+  equipe?: Equipe[];
   status?: string;
   orcamento_previsto?: number;
   orcamento_gasto?: number;
