@@ -15,7 +15,7 @@ Este projeto inclui uma pipeline de CI/CD que automaticamente faz deploy no seu 
 Vá em **Settings > Secrets and variables > Actions** no seu repositório GitHub e adicione os seguintes secrets:
 
 ### Secrets Obrigatórios:
-
+ 
 | Nome | Descrição | Exemplo |
 |------|-----------|---------|
 | `VPS_HOST` | IP ou domínio do seu VPS | `192.168.1.100` ou `meusite.com` |
