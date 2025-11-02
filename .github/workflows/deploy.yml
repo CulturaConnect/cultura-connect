@@ -45,11 +45,18 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     name: Deploy to VPS
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Debug secrets (remove after test)
+      run: |
+        echo "VPS_HOST exists: ${{ secrets.VPS_HOST != '' }}"
+        echo "VPS_USERNAME exists: ${{ secrets.VPS_USERNAME != '' }}"
+        echo "VPS_SSH_KEY exists: ${{ secrets.VPS_SSH_KEY != '' }}"
+        echo "VPS_PROJECT_PATH exists: ${{ secrets.VPS_PROJECT_PATH != '' }}"
 
     - name: Deploy to VPS
       uses: appleboy/ssh-action@v1.0.3
@@ -57,7 +64,7 @@ jobs:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USERNAME }}
         key: ${{ secrets.VPS_SSH_KEY }}
-        port: ${{ secrets.VPS_PORT || 22 }}
+        port: ${{ secrets.VPS_PORT || '22' }}
         command_timeout: 300s
         script: |
           # Cores para output
@@ -108,7 +115,7 @@ jobs:
           # Verificar se package.json mudou
           if git diff HEAD~1 --name-only | grep -q "package.json\|package-lock.json" || [ ! -d "node_modules" ]; then
             echo -e "${YELLOW}📦 Instalando/atualizando dependências...${NC}"
-            npm ci --only=production
+            npm ci
           else
             echo -e "${GREEN}📦 Dependências já estão atualizadas${NC}"
           fi
@@ -126,21 +133,6 @@ jobs:
           # Definir permissões corretas
           echo -e "${BLUE}🔐 Configurando permissões...${NC}"
           chmod -R 755 dist/ || true
-          
-          # Reiniciar serviços (descomente conforme necessário)
-          echo -e "${BLUE}🔄 Reiniciando serviços...${NC}"
-          
-          # Para Nginx
-          # sudo systemctl reload nginx && echo -e "${GREEN}✅ Nginx recarregado${NC}" || echo -e "${YELLOW}⚠️ Erro ao recarregar Nginx${NC}"
-          
-          # Para PM2
-          # pm2 restart all && echo -e "${GREEN}✅ PM2 reiniciado${NC}" || echo -e "${YELLOW}⚠️ Erro ao reiniciar PM2${NC}"
-          
-          # Para Apache
-          # sudo systemctl reload apache2 && echo -e "${GREEN}✅ Apache recarregado${NC}" || echo -e "${YELLOW}⚠️ Erro ao recarregar Apache${NC}"
-          
-          # Para Docker
-          # docker-compose restart web && echo -e "${GREEN}✅ Docker reiniciado${NC}" || echo -e "${YELLOW}⚠️ Erro ao reiniciar Docker${NC}"
           
           echo -e "${GREEN}🎉 Deploy concluído com sucesso!${NC}"
           echo -e "${BLUE}📊 Estatísticas do build:${NC}"
