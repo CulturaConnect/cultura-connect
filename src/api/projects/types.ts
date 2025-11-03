@@ -49,6 +49,7 @@ export interface UpdateProject {
   orcamento_previsto?: number;
   orcamento_gasto?: number;
   is_public?: boolean;
+  imagem?: File;
 }
 
 export interface Modelo {

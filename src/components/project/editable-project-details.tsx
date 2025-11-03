@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ import {
   Wifi,
   Repeat,
   Loader2,
+  Upload,
 } from "lucide-react";
 import { Project, UpdateProject } from "@/api/projects/types";
 import { useUpdateProjectMutation } from "@/api/projects/projects.queries";
@@ -76,6 +77,25 @@ function formatDateForInput(dateString: string): string {
   }
 }
 
+const MAX_FILE_SIZE_MB = 10;
+const ACCEPTED_IMAGE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/svg+xml",
+];
+
+const areaExecucaoSchema = z.object({
+  rua: z.string().optional(),
+  cep: z.string().optional(),
+  logradouro: z.string().optional(),
+  numero: z.string().optional(),
+  complemento: z.string().optional(),
+  bairro: z.string().optional(),
+  cidade: z.string().optional(),
+  observacoes: z.string().optional(),
+});
+
 const updateSchema = z.object({
   nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   segmento: z.string().min(1, "Segmento é obrigatório"),
@@ -91,8 +111,32 @@ const updateSchema = z.object({
   metas: z.string().min(1, "Metas são obrigatórias"),
   is_digital: z.boolean(),
   is_public: z.boolean(),
+  areas_execucao: z.array(areaExecucaoSchema).optional(),
+  imagem: z
+    .instanceof(File, {
+      message: "É necessário enviar uma imagem para o projeto.",
+    })
+    .refine(
+      (file) => file.size <= MAX_FILE_SIZE_MB * 1024 * 1024,
+      `O arquivo da imagem deve ser menor que ${MAX_FILE_SIZE_MB}MB.`
+    )
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+      "Formato de imagem inválido. Use PNG, JPG, JPEG ou SVG."
+    )
+    .optional(),
   orcamento_previsto: z.string().optional(),
   orcamento_gasto: z.string().optional(),
+  // Modelo Canvas
+  modelo: z.object({
+    missao: z.string().optional(),
+    visao: z.string().optional(),
+    mercado: z.string().optional(),
+    publico_alvo: z.string().optional(),
+    receita: z.string().optional(),
+    proposta_valor: z.string().optional(),
+    retencao: z.string().optional(),
+  }).optional(),
 }).refine((data) => new Date(data.fim) >= new Date(data.inicio), {
   message: "Data de fim deve ser igual ou posterior à data de início",
   path: ["fim"],
@@ -112,6 +156,7 @@ export default function EditableProjectDetails({
   onToggleEdit 
 }: EditableProjectDetailsProps) {
   const { mutateAsync: updateProject, isPending } = useUpdateProjectMutation();
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const form = useForm<UpdateFormData>({
     resolver: zodResolver(updateSchema),
@@ -130,36 +175,164 @@ export default function EditableProjectDetails({
       metas: project.metas,
       is_digital: project.is_digital,
       is_public: project.is_public,
+      areas_execucao: project.areas_execucao || [{
+        rua: "",
+        cep: "",
+        logradouro: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        cidade: "",
+        observacoes: "",
+      }],
       orcamento_previsto: project.orcamento_previsto?.toString() || "",
       orcamento_gasto: project.orcamento_gasto?.toString() || "",
+      imagem: undefined,
+      modelo: {
+        missao: project.modelo?.missao || "",
+        visao: project.modelo?.visao || "",
+        mercado: project.modelo?.mercado || "",
+        publico_alvo: project.modelo?.publico_alvo || "",
+        receita: project.modelo?.receita || "",
+        proposta_valor: project.modelo?.proposta_valor || "",
+        retencao: project.modelo?.retencao || "",
+      },
     },
   });
 
+  const { fields: areaFields, append: appendArea, remove: removeArea } = useFieldArray({
+    control: form.control,
+    name: "areas_execucao",
+  });
+
+  const imageFile = form.watch("imagem");
+
+  useEffect(() => {
+    if (imageFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(imageFile);
+    } else {
+      setImagePreview(null);
+    }
+  }, [imageFile]);
+
+  // Definir preview inicial com a imagem do projeto
+  useEffect(() => {
+    if (project.imagem_url && !imageFile) {
+      setImagePreview(project.imagem_url);
+    }
+  }, [project.imagem_url, imageFile]);
+
+  async function handleCepBlur(index: number, value: string) {
+    const cep = value.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.erro) return;
+      form.setValue(
+        `areas_execucao.${index}.logradouro`,
+        data.logradouro || "",
+        {
+          shouldValidate: true,
+        }
+      );
+      form.setValue(`areas_execucao.${index}.bairro`, data.bairro || "", {
+        shouldValidate: true,
+      });
+      form.setValue(`areas_execucao.${index}.cidade`, data.localidade || "", {
+        shouldValidate: true,
+      });
+      form.setValue(`areas_execucao.${index}.rua`, data.logradouro || "", {
+        shouldValidate: true,
+      });
+      form.setValue(
+        `areas_execucao.${index}.complemento`,
+        data.complemento || "",
+        { shouldValidate: true }
+      );
+    } catch {
+      toast.error("Erro ao buscar CEP. Verifique o número e tente novamente.");
+    }
+  }
+
   const onSubmit = async (data: UpdateFormData) => {
     try {
-      const updateData: UpdateProject = {
-        nome: data.nome,
-        segmento: data.segmento,
-        inicio: data.inicio,
-        fim: data.fim,
-        resumo: data.resumo,
-        apresentacao: data.apresentacao,
-        historico: data.historico,
-        descricao_proposta: data.descricao_proposta,
-        descricao_contrapartida: data.descricao_contrapartida,
-        justificativa: data.justificativa,
-        objetivos_gerais: data.objetivos_gerais,
-        metas: data.metas,
-        is_digital: data.is_digital,
-        is_public: data.is_public,
-        orcamento_previsto: data.orcamento_previsto ? parseFloat(data.orcamento_previsto.replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
-        orcamento_gasto: data.orcamento_gasto ? parseFloat(data.orcamento_gasto.replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
-      };
+      // Se há imagem, enviar como FormData, senão como objeto JSON
+      if (data.imagem) {
+        const formData = new FormData();
+        
+        formData.append('nome', data.nome);
+        formData.append('segmento', data.segmento);
+        formData.append('inicio', data.inicio);
+        formData.append('fim', data.fim);
+        formData.append('resumo', data.resumo);
+        formData.append('apresentacao', data.apresentacao);
+        formData.append('historico', data.historico);
+        formData.append('descricao_proposta', data.descricao_proposta);
+        formData.append('descricao_contrapartida', data.descricao_contrapartida);
+        formData.append('justificativa', data.justificativa);
+        formData.append('objetivos_gerais', data.objetivos_gerais);
+        formData.append('metas', data.metas);
+        formData.append('is_digital', String(data.is_digital));
+        formData.append('is_public', String(data.is_public));
+        
+        if (data.areas_execucao) {
+          formData.append('areas_execucao', JSON.stringify(data.areas_execucao));
+        }
+        
+        if (data.modelo) {
+          formData.append('modelo', JSON.stringify(data.modelo));
+        }
+        
+        formData.append('imagem', data.imagem);
+        
+        if (data.orcamento_previsto) {
+          const orcamentoPrevisto = parseFloat(data.orcamento_previsto.replace(/[^\d,]/g, '').replace(',', '.'));
+          formData.append('orcamento_previsto', String(orcamentoPrevisto));
+        }
+        
+        if (data.orcamento_gasto) {
+          const orcamentoGasto = parseFloat(data.orcamento_gasto.replace(/[^\d,]/g, '').replace(',', '.'));
+          formData.append('orcamento_gasto', String(orcamentoGasto));
+        }
 
-      await updateProject({
-        projectId: project.id,
-        projectData: updateData,
-      });
+        await updateProject({
+          projectId: project.id,
+          projectData: formData,
+        });
+      } else {
+        // Sem imagem, enviar como objeto JSON
+        const updateData: UpdateProject = {
+          nome: data.nome,
+          segmento: data.segmento,
+          inicio: data.inicio,
+          fim: data.fim,
+          resumo: data.resumo,
+          apresentacao: data.apresentacao,
+          historico: data.historico,
+          descricao_proposta: data.descricao_proposta,
+          descricao_contrapartida: data.descricao_contrapartida,
+          justificativa: data.justificativa,
+          objetivos_gerais: data.objetivos_gerais,
+          metas: data.metas,
+          is_digital: data.is_digital,
+          is_public: data.is_public,
+          areas_execucao: data.areas_execucao,
+          modelo: data.modelo,
+          orcamento_previsto: data.orcamento_previsto ? parseFloat(data.orcamento_previsto.replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
+          orcamento_gasto: data.orcamento_gasto ? parseFloat(data.orcamento_gasto.replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
+        };
+
+        await updateProject({
+          projectId: project.id,
+          projectData: updateData,
+        });
+      }
 
       toast.success("Projeto atualizado com sucesso!");
       onToggleEdit();
@@ -423,10 +596,16 @@ export default function EditableProjectDetails({
                                   <SelectValue placeholder="Selecione o segmento" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="musica">Música</SelectItem>
                                   <SelectItem value="teatro">Teatro</SelectItem>
                                   <SelectItem value="danca">Dança</SelectItem>
-                                  <SelectItem value="artes">Artes Visuais</SelectItem>
+                                  <SelectItem value="musica">Música</SelectItem>
+                                  <SelectItem value="poema">Poema</SelectItem>
+                                  <SelectItem value="cinema">Cinema</SelectItem>
+                                  <SelectItem value="seminarios">Seminários</SelectItem>
+                                  <SelectItem value="games">Games</SelectItem>
+                                  <SelectItem value="pintura">Pintura</SelectItem>
+                                  <SelectItem value="folclore">Folclore</SelectItem>
+                                  <SelectItem value="outro">Outro</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -511,6 +690,254 @@ export default function EditableProjectDetails({
             </CardContent>
           </div>
         </Card>
+
+        {/* Upload de Imagem */}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Imagem do Projeto
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center w-full">
+              {imagePreview ? (
+                <div className="relative w-full h-64 overflow-hidden rounded-lg border-2 border-gray-300">
+                  <img
+                    src={imagePreview}
+                    alt="Preview da imagem"
+                    className="object-cover w-full h-full"
+                  />
+                  <input
+                    id="dropzone-file"
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg, image/svg+xml"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      const selectedFile = e.target.files?.[0];
+                      if (selectedFile) {
+                        form.setValue("imagem", selectedFile, {
+                          shouldValidate: true,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <label
+                  htmlFor="dropzone-file"
+                  className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-10 h-10 text-gray-400" />
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Clique para fazer upload</span>
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      SVG, PNG, JPG, JPEG (máx. 10MB)
+                    </p>
+                  </div>
+                  <input
+                    id="dropzone-file"
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg, image/svg+xml"
+                    className="hidden"
+                    onChange={(e) => {
+                      const selectedFile = e.target.files?.[0];
+                      if (selectedFile) {
+                        form.setValue("imagem", selectedFile, {
+                          shouldValidate: true,
+                        });
+                      }
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Endereço Físico - Condicional */}
+        {!form.watch("is_digital") && (
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+              <CardTitle className="text-xl">Áreas de Execução</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {areaFields.map((areaField, index) => (
+                  <div
+                    key={areaField.id}
+                    className="flex flex-col gap-4 items-start border p-4 rounded-md"
+                  >
+                    <h5 className="font-semibold">Área {index + 1}</h5>
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.cep`}
+                        render={({ field }) => (
+                          <FormItem className="w-full">
+                            <FormLabel>CEP</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="CEP"
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  handleCepBlur(index, e.target.value);
+                                }}
+                                onBlur={(e) => {
+                                  field.onBlur();
+                                  handleCepBlur(index, e.target.value);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.rua`}
+                        render={({ field }) => (
+                          <FormItem className="w-full">
+                            <FormLabel>Rua</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Rua" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.logradouro`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Logradouro</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Logradouro" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.numero`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Número" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name={`areas_execucao.${index}.complemento`}
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Complemento</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Complemento" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.bairro`}
+                        render={({ field }) => (
+                          <FormItem className="w-full">
+                            <FormLabel>Bairro</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Bairro" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`areas_execucao.${index}.cidade`}
+                        render={({ field }) => (
+                          <FormItem className="w-full">
+                            <FormLabel>Cidade</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Cidade" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name={`areas_execucao.${index}.observacoes`}
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Observações</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Observações sobre a área de execução..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {areaFields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeArea(index)}
+                      >
+                        Remover área
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    appendArea({
+                      rua: "",
+                      cep: "",
+                      logradouro: "",
+                      numero: "",
+                      complemento: "",
+                      bairro: "",
+                      cidade: "",
+                      observacoes: "",
+                    })
+                  }
+                >
+                  Adicionar área
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Campos editáveis */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -706,6 +1133,142 @@ export default function EditableProjectDetails({
             </CardContent>
           </Card>
         </div>
+
+        {/* Modelo de Negócio Canvas */}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b">
+            <CardTitle className="text-xl">Modelo de Negócio Canvas</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="modelo.missao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Missão</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Qual é a missão do projeto?"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="modelo.visao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Visão</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Qual é a visão do projeto?"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="modelo.proposta_valor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Proposta de Valor</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Qual é a proposta de valor?"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="modelo.publico_alvo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Público-Alvo</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Quem é o público-alvo?"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="modelo.mercado"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mercado</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Como é o mercado?"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="modelo.receita"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Modelo de Receita</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Como gerar receita?"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="modelo.retencao"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2 lg:col-span-3">
+                    <FormLabel>Estratégia de Retenção</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Como reter e fidelizar o público?"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Orçamento editável */}
         <Card className="shadow-lg border-0">
